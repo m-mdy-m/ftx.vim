@@ -2,7 +2,12 @@
 
 Fast async file browser for Vim with git integration.
 
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Vim](https://img.shields.io/badge/vim-8.0%2B-green.svg)
+
+
 ![FTX Screenshot](screenshot/tree.png)
+
 ## What is FTX
 
 Clean tree view of your project files with real-time git status indicators. Built for speed with async operations and minimal overhead.
@@ -35,11 +40,9 @@ Check if your Vim supports required features:
 ```vim
 Plug 'm-mdy-m/ftx.vim'
 ```
-
-### Vim 8 packages
-
+Then run:
 ```bash
-git clone https://github.com/m-mdy-m/ftx.vim ~/.vim/pack/ftx/start/ftx
+:PlugInstall
 ```
 
 ### Manual
@@ -53,63 +56,54 @@ make install
 ## Quick Start
 
 ```vim
-:FTX            " Open tree
-:FTXToggle      " Toggle tree
+:FTX            " Open tree in current directory
+:FTXToggle      " Toggle tree visibility
 ```
 
-Inside FTX:
-- `o` or `Enter` to open
-- `t` for new tab
-- `s` for split
-- `v` for vsplit
-- `I` to toggle hidden files
-- `q` to close
+## Keys
+Inside FTX window:
 
-## Configuration
+| Key | Action |
+|-----|--------|
+| `o`, `Enter` | Open file / Toggle directory |
+| `t` | Open in new tab |
+| `s` | Open in horizontal split |
+| `v` | Open in vertical split |
+| `r` | Refresh tree |
+| `R` | Refresh git status |
+| `I` | Toggle hidden files |
+| `-` | Go to parent directory |
+| `~` | Go to home directory |
+| `q` | Close FTX |
+## Git Status Indicators
 
-```vim
-let g:ftx_width = 30              " Window width
-let g:ftx_position = 'left'       " Window position (left/right)
-let g:ftx_show_hidden = 0         " Show hidden files
-let g:ftx_git_status = 1          " Enable git integration
-let g:ftx_sort_dirs_first = 1     " Sort directories first
-let g:ftx_auto_close = 0          " Auto close when last window
-let g:ftx_git_update_time = 1000  " Git update interval (ms)
-```
-
-## Git Integration
-
-Status indicators:
+Symbols appear **before** the filename:
 
 ```
-*   Modified (uncommitted changes)
-+   Staged (ready to commit)
-?   Untracked (not in git)
-$   Stash exists
-↑n  Ahead by n commits
-↓n  Behind by n commits
++ staged.js       # Staged for commit
+* modified.js     # Modified, not staged
+? untracked.js    # Not tracked by git
+- deleted.js      # Deleted
+! conflict.js     # Merge conflict
 ```
 
-Example tree:
+Branch info in status line:
 
 ```
-▾ src
-  ▸ components
-    file.js *
-    utils.js +
-  ▸ styles
-    main.css ?
+myproject [main] ↑2 ↓1 $
+          ↑      ↑  ↑  ↑
+       branch  ahead behind stash
 ```
 
-Disable git:
+- `↑n` - Ahead by n commits
+- `↓n` - Behind by n commits  
+- `$` - Stash exists
 
-```vim
-let g:ftx_git_status = 0
-```
 
 ## Documentation
 
 Full documentation: [docs/FILE_TREE.md.md](docs/FILE_TREE.md.md)
+Example Custom Configuration:     [examples/examples.config.vim](examples/examples.config.vim)
 
 ## Development
 
@@ -142,3 +136,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 MIT License - Copyright (c) 2026 m-mdy-m
 
 See [LICENSE](LICENSE) for full text.
+
+## Credits
+
+Inspired by:
+- **netrw** - Vim's built-in file browser
+- **NERDTree** - Popular tree explorer
+- **fern.vim** - Modern async file explorer
+- **ranger.vim.vim** - Modern async file explorer
+
+Built with simplicity and performance in mind.
