@@ -62,8 +62,8 @@ lint:
 	@echo "File structure OK"
 	@echo ""
 	@echo "Checking license headers..."
-	@grep -q "Copyright (c) 2025 m-mdy-m" plugin/ftx.vim || (echo "Missing license in plugin/ftx.vim"; exit 1)
-	@grep -q "Copyright (c) 2025 m-mdy-m" autoload/ftx.vim || (echo "Missing license in autoload/ftx.vim"; exit 1)
+	@grep -q "Copyright (c) 2026 m-mdy-m" plugin/ftx.vim || (echo "Missing license in plugin/ftx.vim"; exit 1)
+	@grep -q "Copyright (c) 2026 m-mdy-m" autoload/ftx.vim || (echo "Missing license in autoload/ftx.vim"; exit 1)
 	@echo "License headers OK"
 	@echo ""
 	@echo "Checking function naming..."

@@ -99,7 +99,7 @@ jobs:
       
       - name: Check license headers
         run: |
-          grep -q "Copyright (c) 2025 m-mdy-m" plugin/ftx.vim
+          grep -q "Copyright (c) 2026 m-mdy-m" plugin/ftx.vim
           grep -q "MIT License" plugin/ftx.vim
       
       - name: Check function naming

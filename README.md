@@ -139,6 +139,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## License
 
-MIT License - Copyright (c) 2025 m-mdy-m
+MIT License - Copyright (c) 2026 m-mdy-m
 
 See [LICENSE](LICENSE) for full text.

@@ -1,5 +1,5 @@
 " Minimal vimrc for testing FTX
-" Copyright (c) 2025 m-mdy-m
+" Copyright (c) 2026 m-mdy-m
 
 set nocompatible
 filetype off

@@ -1,4 +1,4 @@
-" Copyright (c) 2025 m-mdy-m
+" Copyright (c) 2026 m-mdy-m
 " MIT License
 
 let s:test_results = []
