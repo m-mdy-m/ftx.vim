@@ -108,16 +108,7 @@ let g:ftx_git_status = 0
 
 ## Documentation
 
-Full documentation: [docs/ftx.md](docs/ftx.md)
-
-Topics covered:
-- Installation details
-- All configuration options
-- Command reference
-- Keymap customization
-- Git integration explained
-- Advanced usage patterns
-- Troubleshooting guide
+Full documentation: [docs/FILE_TREE.md.md](docs/FILE_TREE.md.md)
 
 ## Development
 
