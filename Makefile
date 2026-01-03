@@ -2,8 +2,6 @@ SHELL := /bin/bash
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_DATE := $(shell date -u '+%Y-%m-%d %H:%M:%S UTC')
 
-.PHONY: help test install clean version tag lint
-
 help:
 	@echo "FTX - File Tree eXplorer"
 	@echo ""
