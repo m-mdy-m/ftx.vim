@@ -123,7 +123,6 @@ Detailed Documentation:
 - [Git Integration](docs/git.md) - Git features
 - [Multi-file Marking](docs/marks.md) - Batch operations
 - [Customization](docs/customization.md) - Icons and styling
-- [Example Config](examples/examples.config.vim) - Ready to use examples
 
 ## Contributing
 
