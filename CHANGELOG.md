@@ -103,3 +103,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 [Unreleased]: https://github.com/m-mdy-m/ftx.vim/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.1.0
+
+## [Released]
+
+## [0.2.0] - 2026-01-03
+
+### Added
+
+#### Core
+- Test infrastructure for validating core functionality
+- Example configuration file for easier onboarding
+- `.PHONY` targets for development and maintenance tasks
+- Screenshot showcasing FTX UI and tree layout
+
+#### Git Integration
+- Git branch information in statusline (branch, ahead/behind)
+- Improved git status rendering accuracy
+- Better handling of git job lifecycle and cleanup
+
+#### Documentation
+- Expanded README with clearer usage instructions
+- Added configuration examples
+- Updated project metadata and documentation year
+
+### Fixed
+- Incorrect git status propagation for nested directories
+- Statusline not updating after git refresh
+- Minor inconsistencies in tree rendering after refresh
+
+### Changed
+- Improved internal git status update flow
+- Refined statusline update logic for better UX
+
+[0.2.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.2.0
