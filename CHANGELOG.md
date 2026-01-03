@@ -136,3 +136,173 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Refined statusline update logic for better UX
 
 [0.2.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.2.0
+
+## [0.3.0] - 2026-01-03
+
+### Added
+
+#### Major New Features
+- **Auto-sync**: Tree automatically syncs to show current file when switching buffers
+  - Expands directories automatically to reveal current file
+  - Configurable with `g:ftx_auto_sync` (default: 1)
+  - Intelligent detection to avoid unnecessary updates
+
+- **Multi-file Marking System**: Mark multiple files for batch operations
+  - Toggle marks with `m` key
+  - Visual mark indicator (`✓` by default)
+  - Mark counter in status line
+  - Operations:
+    - `mo` - Open all marked files in tabs
+    - `mg` - Stage all marked files to git
+    - `M` - Clear all marks
+  - Configurable with `g:ftx_enable_marks`
+
+- **Tree Operations**: Expand/collapse entire tree
+  - `O` - Expand all directories
+  - `C` - Collapse all directories
+  - `:FTXExpandToDepth N` - Expand to specific depth
+  - Useful for navigating large projects
+
+- **Terminal Integration**: Open terminal in selected path
+  - `cd` key or `:FTXOpenTerminal` command
+  - Opens terminal in file's directory or selected directory
+  - Smart window selection
+  - Works with both Vim and Neovim terminals
+
+- **Interactive Help Float**: Built-in help system
+  - Press `?` inside FTX or use `:FTXHelp`
+  - Shows all keymaps in a popup window
+  - Scrollable with j/k keys
+  - Close with any key
+  - Falls back to echo if popups not available
+
+#### Git Enhancements
+- **Fixed Git Blame**: Properly working blame popup
+  - Shows last 10 commits for selected file
+  - Displays commit hash, author, time, and message
+  - Scrollable popup with formatted output
+  - Close with any key (Esc, q, Space, Enter)
+
+- **Fixed Branch Info Popup**: Proper popup handling
+  - Shows branch name, ahead/behind commits, stash status
+  - Properly closes with any key
+  - Scrollable content
+  - Better formatting with box-drawing characters
+
+- **Ignored Files in Git Status**: Show gitignore files when enabled
+  - Respects `g:ftx_show_ignored` setting
+  - Uses custom icon for ignored files
+
+#### Documentation
+  Detailed Documentation:
+  - [Complete Guide](docs/README.md) - Start here
+  - [Configuration](docs/configuration.md) - All settings
+  - [Keymaps](docs/keymaps.md) - Keyboard shortcuts
+  - [Git Integration](docs/git.md) - Git features
+  - [Multi-file Marking](docs/marks.md) - Batch operations
+  - [Customization](docs/customization.md) - Icons and styling
+  
+#### Commands
+New commands added:
+- `:FTXHelp` - Show interactive help
+- `:FTXExpandAll` - Expand all directories
+- `:FTXCollapseAll` - Collapse all directories
+- `:FTXExpandToDepth N` - Expand to specific depth
+- `:FTXOpenTerminal` - Open terminal in path
+- `:FTXMarkToggle` - Toggle mark
+- `:FTXMarkClear` - Clear all marks
+- `:FTXMarkedOpen` - Open marked files
+- `:FTXMarkedStage` - Stage marked files
+
+#### Keymaps
+New keymaps inside FTX:
+- `?` - Show help
+- `O` - Expand all
+- `C` - Collapse all
+- `ig` - Toggle ignored files
+- `yy` - Copy path
+- `cd` - Open terminal
+- `m` - Toggle mark
+- `M` - Clear marks
+- `mo` - Open marked
+- `mg` - Stage marked
+- `gb` - Git blame
+- `gi` - Git branch info
+
+New global keymaps:
+- `<leader>nh` - Show help
+
+#### Configuration Options
+New configuration variables:
+- `g:ftx_auto_sync` - Auto-sync on buffer change (default: 1)
+- `g:ftx_enable_marks` - Enable marking system (default: 1)
+- `g:ftx_show_ignored` - Show gitignore files (default: 0)
+- `g:ftx_icon_marked` - Mark indicator icon (default: '✓')
+
+### Changed
+- **Improved Popup Handling**: All popups now close properly
+  - Fixed GitBranchInfo popup not closing
+  - Fixed Git Blame popup issues
+  - Better keyboard navigation in popups
+  - Consistent behavior across all popups
+
+- **Enhanced Renderer**: Better performance and features
+  - Support for mark indicators
+  - Better icon handling
+  - Optimized tree building
+  - Smart sync to current file
+
+- **Better Git Status Updates**: More reliable and faster
+  - Handles ignored files correctly
+  - Better error handling
+  - Improved async job management
+  - Reduced unnecessary updates
+
+- **Improved Help Documentation**: Complete and accurate
+  - All features documented
+  - Better examples
+  - Proper Vim help format
+  - Working help tags
+
+### Fixed
+- **Critical**: Popups close properly
+  - GitBranchInfo popup closes on any key
+  - Git Blame popup closes correctly
+  - Help popup closes as expected
+  - No stuck popups
+
+- **Git Status**: Improved reliability
+  - Better status parsing
+  - Correct ignored file detection
+  - Fixed race conditions
+  - Better job cleanup
+
+- **Renderer**: Various fixes
+  - Correct mark display
+  - Better icon positioning
+  - Fixed sync issues
+  - Improved cursor positioning
+
+- **Auto-sync**: Smart buffer detection
+  - Avoids unnecessary updates
+  - Correct file detection
+  - Better performance
+  - No false triggers
+
+### Performance
+- **Optimized Tree Rendering**: Faster with large directories
+- **Better Job Management**: Reduced memory usage
+- **Smart Auto-sync**: Only updates when needed
+- **Efficient Mark Tracking**: Minimal overhead
+
+### Testing
+- **Enhanced CI/CD**: More comprehensive tests
+  - Tests for new features
+  - Popup functionality tests
+  - Help tag generation verification
+  - Multiple Vim versions (8.2, 9.0, 9.1, nightly)
+
+[Released]: https://github.com/m-mdy-m/ftx.vim/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.3.0
+[0.2.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.2.0
+[0.1.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.1.0
