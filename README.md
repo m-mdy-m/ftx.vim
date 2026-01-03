@@ -143,6 +143,6 @@ Inspired by:
 - **netrw** - Vim's built-in file browser
 - **NERDTree** - Popular tree explorer
 - **fern.vim** - Modern async file explorer
-- **ranger.vim.vim** - Modern async file explorer
+- **ranger.vim.vim** - integration in vim and neovim
 
 Built with simplicity and performance in mind.
