@@ -141,12 +141,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 MIT License - Copyright (c) 2025 m-mdy-m
 
 See [LICENSE](LICENSE) for full text.
-
-## Author
-
-m-mdy-m - bitsgenix@gmail.com
-
-## Links
-
-- Issues: https://github.com/m-mdy-m/ftx.vim/issues
-- Source: https://github.com/m-mdy-m/ftx.vim
