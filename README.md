@@ -2,6 +2,7 @@
 
 Fast async file browser for Vim with git integration.
 
+![FTX Screenshot](screenshot/tree.png)
 ## What is FTX
 
 Clean tree view of your project files with real-time git status indicators. Built for speed with async operations and minimal overhead.
