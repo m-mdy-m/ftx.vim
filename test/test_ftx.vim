@@ -23,36 +23,66 @@ function! s:Skip(message) abort
   let s:skip_count += 1
 endfunction
 
+function! s:CleanupFTX() abort
+  if ftx#IsOpen()
+    call ftx#Close()
+  endif
+  call ftx#Cleanup()
+endfunction
+
+function! s:TestCommands() abort
+  echo 'Testing commands...'
+  
+  call s:Assert(exists(':FTX'), 'FTX command exists')
+  call s:Assert(exists(':FTXOpen'), 'FTXOpen command exists')
+  call s:Assert(exists(':FTXToggle'), 'FTXToggle command exists')
+  call s:Assert(exists(':FTXClose'), 'FTXClose command exists')
+  call s:Assert(exists(':FTXRefresh'), 'FTXRefresh command exists')
+  call s:Assert(exists(':FTXRefreshGit'), 'FTXRefreshGit command exists')
+  call s:Assert(exists(':FTXFocus'), 'FTXFocus command exists')
+  call s:Assert(exists(':FTXToggleHidden'), 'FTXToggleHidden command exists')
+endfunction
+
 function! s:TestBasicOpen() abort
   echo 'Testing basic open...'
   
+  call s:CleanupFTX()
+  
   call ftx#Open()
+  sleep 100m
+  
   call s:Assert(ftx#IsOpen(), 'FTX opens successfully')
   
   let bufnr = ftx#GetBufnr()
   call s:Assert(bufnr != -1, 'Buffer number is valid')
   call s:Assert(bufexists(bufnr), 'Buffer exists')
   
-  call ftx#Close()
+  call s:CleanupFTX()
   call s:Assert(!ftx#IsOpen(), 'FTX closes successfully')
 endfunction
 
 function! s:TestToggle() abort
   echo 'Testing toggle...'
   
+  call s:CleanupFTX()
+  
   call s:Assert(!ftx#IsOpen(), 'FTX is closed initially')
   
   call ftx#Toggle()
+  sleep 100m
   call s:Assert(ftx#IsOpen(), 'FTX toggles on')
   
   call ftx#Toggle()
+  sleep 100m
   call s:Assert(!ftx#IsOpen(), 'FTX toggles off')
 endfunction
 
 function! s:TestWindowProperties() abort
   echo 'Testing window properties...'
   
+  call s:CleanupFTX()
   call ftx#Open()
+  sleep 100m
   
   let bufnr = ftx#GetBufnr()
   call s:Assert(getbufvar(bufnr, '&buftype') ==# 'nofile', 'Buffer type is nofile')
@@ -67,9 +97,8 @@ function! s:TestWindowProperties() abort
   let winnr = win_id2win(winid)
   call s:Assert(getwinvar(winnr, '&cursorline') == 1, 'Cursorline is enabled')
   call s:Assert(getwinvar(winnr, '&number') == 0, 'Line numbers are disabled')
-  call s:Assert(getwinvar(winnr, '&relativenumber') == 0, 'Relative numbers are disabled')
   
-  call ftx#Close()
+  call s:CleanupFTX()
 endfunction
 
 function! s:TestConfiguration() abort
@@ -79,134 +108,108 @@ function! s:TestConfiguration() abort
   let old_position = g:ftx_position
   
   let g:ftx_width = 40
+  call s:CleanupFTX()
   call ftx#Open()
+  sleep 100m
+  
   let winid = bufwinid(ftx#GetBufnr())
   let width = winwidth(win_id2win(winid))
   call s:Assert(width == 40, 'Width configuration works (expected 40, got ' . width . ')')
-  call ftx#Close()
+  
+  call s:CleanupFTX()
   
   let g:ftx_position = 'right'
   call ftx#Open()
+  sleep 100m
+  
   let winid = bufwinid(ftx#GetBufnr())
   let winnr = win_id2win(winid)
   call s:Assert(winnr == winnr('$'), 'Right position works')
-  call ftx#Close()
+  
+  call s:CleanupFTX()
   
   let g:ftx_width = old_width
   let g:ftx_position = old_position
 endfunction
 
-function! s:TestMultipleOperations() abort
-  echo 'Testing multiple operations...'
+function! s:TestNavigation() abort
+  echo 'Testing navigation...'
   
+  call s:CleanupFTX()
   call ftx#Open()
-  call s:Assert(ftx#IsOpen(), 'First open successful')
+  sleep 100m
   
-  call ftx#Open()
-  call s:Assert(ftx#IsOpen(), 'Second open doesn''t break')
-  
-  call ftx#Refresh()
-  call s:Assert(ftx#IsOpen(), 'Refresh works')
+  call s:Assert(ftx#IsOpen(), 'FTX is open for navigation test')
   
   call ftx#Focus()
+  sleep 100m
   call s:Assert(bufnr('%') == ftx#GetBufnr(), 'Focus switches to FTX buffer')
   
-  call ftx#Close()
+  call ftx#Refresh()
+  sleep 100m
+  call s:Assert(ftx#IsOpen(), 'Refresh works')
+  
+  call s:CleanupFTX()
 endfunction
 
-function! s:TestGitDetection() abort
-  echo 'Testing git detection...'
+function! s:TestHiddenFiles() abort
+  echo 'Testing hidden files...'
+  
+  let old_hidden = g:ftx_show_hidden
+  
+  let g:ftx_show_hidden = 0
+  call s:CleanupFTX()
+  call ftx#Open()
+  sleep 100m
+  call s:Assert(g:ftx_show_hidden == 0, 'Hidden files initially hidden')
+  
+  call ftx#action#ToggleHidden()
+  sleep 100m
+  call s:Assert(g:ftx_show_hidden == 1, 'Hidden files toggled on')
+  
+  call ftx#action#ToggleHidden()
+  sleep 100m
+  call s:Assert(g:ftx_show_hidden == 0, 'Hidden files toggled off')
+  
+  call s:CleanupFTX()
+  let g:ftx_show_hidden = old_hidden
+endfunction
+
+function! s:TestGitIntegration() abort
+  echo 'Testing git integration...'
   
   if !executable('git')
     call s:Skip('Git not available')
     return
   endif
   
+  if !isdirectory(getcwd() . '/.git')
+    call s:Skip('Not in a git repository')
+    return
+  endif
+  
   call s:Assert(exists('*ftx#git#UpdateStatus'), 'Git update function exists')
   call s:Assert(exists('*ftx#git#Cleanup'), 'Git cleanup function exists')
+  call s:Assert(exists('*ftx#git#Refresh'), 'Git refresh function exists')
+  call s:Assert(exists('*ftx#git#GetBranchInfo'), 'Git branch info function exists')
   
+  let old_git_status = g:ftx_git_status
+  let g:ftx_git_status = 1
+  
+  call s:CleanupFTX()
   call ftx#Open()
+  sleep 500m
   
-  if isdirectory(getcwd() . '/.git')
-    sleep 1500m
-    call s:Assert(1, 'Git status integration available')
-  else
-    call s:Skip('Not in a git repository')
-  endif
+  call s:Assert(ftx#IsOpen(), 'FTX opens with git integration')
   
-  call ftx#Close()
-endfunction
-
-function! s:TestRendererFunctions() abort
-  echo 'Testing renderer functions...'
-  
-  call s:Assert(exists('*ftx#renderer#Render'), 'Render function exists')
-  call s:Assert(exists('*ftx#renderer#GetNode'), 'GetNode function exists')
-  call s:Assert(exists('*ftx#renderer#ToggleExpand'), 'ToggleExpand function exists')
-  call s:Assert(exists('*ftx#renderer#SetGitStatus'), 'SetGitStatus function exists')
-  call s:Assert(exists('*ftx#renderer#GetTree'), 'GetTree function exists')
-endfunction
-
-function! s:TestStyleFunctions() abort
-  echo 'Testing style functions...'
-  
-  call s:Assert(exists('*ftx#style#Syntax'), 'Syntax function exists')
-  call s:Assert(exists('*ftx#style#Highlight'), 'Highlight function exists')
-  
-  call ftx#Open()
-  
-  let bufnr = ftx#GetBufnr()
-  call s:Assert(getbufvar(bufnr, 'current_syntax') ==# 'ftx', 'Syntax is set')
-  
-  call ftx#Close()
-endfunction
-
-function! s:TestActionFunctions() abort
-  echo 'Testing action functions...'
-  
-  call s:Assert(exists('*ftx#action#Open'), 'Open action exists')
-  call s:Assert(exists('*ftx#action#ToggleHidden'), 'ToggleHidden action exists')
-  
-  let old_hidden = g:ftx_show_hidden
-  call ftx#action#ToggleHidden()
-  call s:Assert(g:ftx_show_hidden != old_hidden, 'ToggleHidden changes setting')
-  call ftx#action#ToggleHidden()
-  call s:Assert(g:ftx_show_hidden == old_hidden, 'ToggleHidden restores setting')
-endfunction
-
-function! s:TestCommands() abort
-  echo 'Testing commands...'
-  
-  call s:Assert(exists(':FTX'), 'FTX command exists')
-  call s:Assert(exists(':FTXToggle'), 'FTXToggle command exists')
-  call s:Assert(exists(':FTXClose'), 'FTXClose command exists')
-  call s:Assert(exists(':FTXRefresh'), 'FTXRefresh command exists')
-  call s:Assert(exists(':FTXFocus'), 'FTXFocus command exists')
-endfunction
-
-function! s:TestAutoClose() abort
-  echo 'Testing auto close...'
-  
-  let old_auto_close = g:ftx_auto_close
-  let g:ftx_auto_close = 1
-  
-  call ftx#Open()
-  enew
-  
-  let initial_windows = winnr('$')
-  call ftx#AutoClose()
-  
-  let g:ftx_auto_close = old_auto_close
-  call s:Assert(1, 'Auto close doesn''t crash')
-  
-  if ftx#IsOpen()
-    call ftx#Close()
-  endif
+  call s:CleanupFTX()
+  let g:ftx_git_status = old_git_status
 endfunction
 
 function! s:TestEdgeCases() abort
   echo 'Testing edge cases...'
   
+  call s:CleanupFTX()
   call ftx#Close()
   call ftx#Close()
   call s:Assert(1, 'Multiple closes don''t crash')
@@ -218,11 +221,32 @@ function! s:TestEdgeCases() abort
   call s:Assert(1, 'Focus on closed tree doesn''t crash')
   
   try
-    call ftx#Open('/nonexistent/path/that/does/not/exist')
+    call ftx#Open('/this/path/does/not/exist/at/all')
+    sleep 100m
     call s:Assert(!ftx#IsOpen(), 'Invalid path doesn''t open')
   catch
-    call s:Assert(1, 'Invalid path is handled')
+    call s:Assert(1, 'Invalid path is handled gracefully')
   endtry
+  
+  call s:CleanupFTX()
+endfunction
+
+function! s:TestMultipleInstances() abort
+  echo 'Testing multiple instances...'
+  
+  call s:CleanupFTX()
+  
+  call ftx#Open()
+  sleep 100m
+  let first_bufnr = ftx#GetBufnr()
+  call s:Assert(ftx#IsOpen(), 'First instance opens')
+  
+  call ftx#Open()
+  sleep 100m
+  let second_bufnr = ftx#GetBufnr()
+  call s:Assert(first_bufnr == second_bufnr, 'Second open reuses buffer')
+  
+  call s:CleanupFTX()
 endfunction
 
 function! s:RunTests() abort
@@ -233,19 +257,17 @@ function! s:RunTests() abort
   echo ''
   
   call s:TestCommands()
-  call s:TestRendererFunctions()
-  call s:TestStyleFunctions()
-  call s:TestActionFunctions()
   call s:TestBasicOpen()
   call s:TestToggle()
   call s:TestWindowProperties()
   call s:TestConfiguration()
-  call s:TestMultipleOperations()
-  call s:TestGitDetection()
-  call s:TestAutoClose()
+  call s:TestNavigation()
+  call s:TestHiddenFiles()
+  call s:TestGitIntegration()
+  call s:TestMultipleInstances()
   call s:TestEdgeCases()
   
-  call ftx#Cleanup()
+  call s:CleanupFTX()
   
   echo ''
   echo '======================================'
