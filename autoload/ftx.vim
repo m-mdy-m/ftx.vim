@@ -3,13 +3,14 @@
 
 let s:bufnr = -1
 let s:root = ''
+let s:bufname_counter = 0
 
 function! ftx#Open(...) abort
   let path = a:0 > 0 ? fnamemodify(a:1, ':p') : getcwd()
   
   if !isdirectory(path)
     echohl ErrorMsg
-    echo '[ftx] Not a directory: ' . path
+    echo '[FTX] Not a directory: ' . path
     echohl None
     return
   endif
@@ -24,6 +25,10 @@ function! ftx#Open(...) abort
   
   call s:CreateWindow()
   call ftx#Refresh()
+  
+  if g:ftx_git_status
+    call timer_start(100, {-> ftx#git#UpdateStatus(s:root)})
+  endif
 endfunction
 
 function! ftx#Toggle() abort
@@ -52,9 +57,13 @@ function! ftx#Refresh() abort
     return
   endif
   
-  let save_pos = getcurpos()
+  let save_line = line('.')
+  let save_col = col('.')
+  
   call ftx#renderer#Render(s:root)
-  call setpos('.', save_pos)
+  
+  call cursor(save_line, save_col)
+  call s:UpdateStatusLine()
 endfunction
 
 function! ftx#Focus() abort
@@ -100,6 +109,7 @@ function! s:CreateWindow() abort
   execute pos . ' ' . g:ftx_width . 'vnew'
   
   let s:bufnr = bufnr('%')
+  let s:bufname_counter += 1
   
   setlocal buftype=nofile
   setlocal bufhidden=hide
@@ -115,9 +125,44 @@ function! s:CreateWindow() abort
   setlocal cursorline
   setlocal filetype=ftx
   
-  execute 'file ftx://' . s:root
+  execute 'silent! file FTX_' . s:bufname_counter
   
   call s:SetupMappings()
+  call s:UpdateStatusLine()
+endfunction
+
+function! s:UpdateStatusLine() abort
+  if !ftx#IsOpen()
+    return
+  endif
+  
+  let bufnr = ftx#GetBufnr()
+  let dir_name = fnamemodify(s:root, ':t')
+  if dir_name ==# ''
+    let dir_name = '/'
+  endif
+  
+  let git_info = ftx#git#GetBranchInfo()
+  let status = ' ' . dir_name
+  
+  if !empty(git_info)
+    let branch = get(git_info, 'branch', '')
+    if branch !=# ''
+      let status .= ' [' . branch . ']'
+    endif
+    
+    if get(git_info, 'ahead', 0) > 0
+      let status .= ' ↑' . git_info.ahead
+    endif
+    if get(git_info, 'behind', 0) > 0
+      let status .= ' ↓' . git_info.behind
+    endif
+    if get(git_info, 'has_stash', 0)
+      let status .= ' $'
+    endif
+  endif
+  
+  call setbufvar(bufnr, '&statusline', status)
 endfunction
 
 function! s:SetupMappings() abort
@@ -127,8 +172,14 @@ function! s:SetupMappings() abort
   nnoremap <buffer> <silent> s :call ftx#action#Open('split')<CR>
   nnoremap <buffer> <silent> v :call ftx#action#Open('vsplit')<CR>
   nnoremap <buffer> <silent> r :call ftx#Refresh()<CR>
-  nnoremap <buffer> <silent> R :call ftx#Refresh()<CR>
+  nnoremap <buffer> <silent> R :call ftx#action#RefreshGit()<CR>
   nnoremap <buffer> <silent> I :call ftx#action#ToggleHidden()<CR>
   nnoremap <buffer> <silent> q :call ftx#Close()<CR>
   nnoremap <buffer> <silent> <2-LeftMouse> :call ftx#action#Open('edit')<CR>
+  nnoremap <buffer> <silent> - :call ftx#action#GoUp()<CR>
+  nnoremap <buffer> <silent> ~ :call ftx#action#GoHome()<CR>
+endfunction
+
+function! ftx#UpdateStatusLine() abort
+  call s:UpdateStatusLine()
 endfunction

@@ -14,26 +14,29 @@ if exists('g:loaded_ftx')
   finish
 endif
 let g:loaded_ftx = 1
+
 if !has('job') || !has('timers')
   echohl ErrorMsg
-  echo '[ftx] Vim 8.0+ with +job and +timers is required'
+  echo '[FTX] Vim 8.0+ with +job and +timers is required'
   echohl None
   finish
 endif
 
 let g:ftx_width = get(g:, 'ftx_width', 30)
 let g:ftx_position = get(g:, 'ftx_position', 'left')
-let g:ftx_show_hidden = get(g:, 'ftx_show_hidden', 0)
+let g:ftx_show_hidden = get(g:, 'ftx_show_hidden',1)
 let g:ftx_git_status = get(g:, 'ftx_git_status', 1)
 let g:ftx_sort_dirs_first = get(g:, 'ftx_sort_dirs_first', 1)
 let g:ftx_auto_close = get(g:, 'ftx_auto_close', 0)
-let g:ftx_git_update_time = get(g:, 'ftx_git_update_time', 1000)
+
+command! -nargs=? -complete=dir FTXOpen call ftx#Open(<q-args>)
 command! -nargs=? -complete=dir FTX call ftx#Open(<q-args>)
 command! FTXToggle call ftx#Toggle()
 command! FTXClose call ftx#Close()
 command! FTXRefresh call ftx#Refresh()
+command! FTXRefreshGit call ftx#action#RefreshGit()
 command! FTXFocus call ftx#Focus()
-nnoremap <silent> <F2> :FTX<CR>
+command! FTXToggleHidden call ftx#action#ToggleHidden()
 
 augroup ftx_internal
   autocmd!

@@ -15,13 +15,21 @@ function! ftx#action#Open(cmd) abort
   
   if !filereadable(node.path)
     echohl ErrorMsg
-    echo '[ftx] File not readable: ' . node.path
+    echo '[FTX] File not readable: ' . node.path
     echohl None
     return
   endif
-  wincmd p
+  
+  let suitable_win = s:FindSuitableWindow()
+  
+  if suitable_win != -1
+    execute suitable_win . 'wincmd w'
+  else
+    wincmd p
+  endif
+  
   execute a:cmd . ' ' . fnameescape(node.path)
-
+  
   if get(g:, 'ftx_close_on_open', 0)
     call ftx#Close()
   endif
@@ -31,7 +39,35 @@ function! ftx#action#ToggleHidden() abort
   let g:ftx_show_hidden = !g:ftx_show_hidden
   call ftx#Refresh()
   
-  echo '[ftx] Hidden files: ' . (g:ftx_show_hidden ? 'shown' : 'hidden')
+  echo '[FTX] Hidden files: ' . (g:ftx_show_hidden ? 'shown' : 'hidden')
+endfunction
+
+function! ftx#action#RefreshGit() abort
+  if !g:ftx_git_status
+    echo '[FTX] Git integration is disabled'
+    return
+  endif
+  
+  echo '[FTX] Refreshing git status...'
+  call ftx#git#Refresh()
+endfunction
+
+function! ftx#action#GoUp() abort
+  let root = ftx#GetRoot()
+  let parent = fnamemodify(root, ':h')
+  
+  if parent !=# root && isdirectory(parent)
+    call ftx#Open(parent)
+  else
+    echo '[FTX] Already at root'
+  endif
+endfunction
+
+function! ftx#action#GoHome() abort
+  let home = expand('~')
+  if isdirectory(home)
+    call ftx#Open(home)
+  endif
 endfunction
 
 function! s:FindSuitableWindow() abort

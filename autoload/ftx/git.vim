@@ -2,32 +2,30 @@
 " MIT License
 
 let s:jobs = {}
-let s:timer = -1
 let s:git_root = ''
 let s:status_cache = {}
 let s:branch_info = {}
+let s:status_lines = []
 
 function! ftx#git#UpdateStatus(path) abort
-  if !executable('git')
+  if !g:ftx_git_status || !executable('git')
     return
   endif
   
   let git_root = s:FindGitRoot(a:path)
   if git_root ==# ''
+    let s:git_root = ''
+    let s:status_cache = {}
+    let s:branch_info = {}
+    call ftx#UpdateStatusLine()
     return
   endif
   
   let s:git_root = git_root
   let s:status_cache = {}
   let s:branch_info = {}
+  let s:status_lines = []
   
-  call s:CancelTimer()
-  call s:RunGitStatus()
-  
-  let s:timer = timer_start(g:ftx_git_update_time, function('s:TimerCallback'), {'repeat': -1})
-endfunction
-
-function! s:TimerCallback(timer) abort
   call s:RunGitStatus()
 endfunction
 
@@ -41,8 +39,8 @@ function! s:RunGitStatus() abort
   let cmd = ['git', '-C', s:git_root, 'status', '--porcelain', '-b']
   let job = job_start(cmd, {
         \ 'out_cb': function('s:OnStdout'),
-        \ 'exit_cb': function('s:OnExit'),
-        \ 'cwd': s:git_root,
+        \ 'exit_cb': function('s:OnStatusExit'),
+        \ 'err_mode': 'nl',
         \ })
   
   if job_status(job) ==# 'run'
@@ -51,18 +49,34 @@ function! s:RunGitStatus() abort
 endfunction
 
 function! s:OnStdout(channel, msg) abort
-  if a:msg =~# '^##'
-    call s:ParseBranchLine(a:msg)
-  else
-    call s:ParseFileLine(a:msg)
+  call add(s:status_lines, a:msg)
+endfunction
+
+function! s:OnStatusExit(job, status) abort
+  if a:status != 0
+    return
   endif
+  
+  for line in s:status_lines
+    if line =~# '^##'
+      call s:ParseBranchLine(line)
+    else
+      call s:ParseFileLine(line)
+    endif
+  endfor
+  
+  call s:CheckStash()
 endfunction
 
 function! s:ParseBranchLine(line) abort
+  let branch_match = matchlist(a:line, '## \([^.[:space:]]\+\)')
+  let branch = len(branch_match) > 1 ? branch_match[1] : ''
+  
   let ahead_match = matchlist(a:line, 'ahead \(\d\+\)')
   let behind_match = matchlist(a:line, 'behind \(\d\+\)')
   
   let s:branch_info = {
+        \ 'branch': branch,
         \ 'ahead': len(ahead_match) > 1 ? str2nr(ahead_match[1]) : 0,
         \ 'behind': len(behind_match) > 1 ? str2nr(behind_match[1]) : 0,
         \ 'has_stash': 0
@@ -78,37 +92,43 @@ function! s:ParseFileLine(line) abort
   let file = substitute(a:line[3:], ' -> .*', '', '')
   let full_path = s:git_root . '/' . file
   
-  let symbols = ''
+  let symbol = ''
   
-  if status =~# '^[MARC]'
-    let symbols .= '+'
-  elseif status =~# '^ [MARC]'
-    let symbols .= '*'
+  if status[0] ==# 'M' || status[0] ==# 'A' || status[0] ==# 'R' || status[0] ==# 'C'
+    let symbol = '+'
+  elseif status[1] ==# 'M'
+    let symbol = '*'
+  elseif status[0] ==# 'D' || status[1] ==# 'D'
+    let symbol = '-'
+  elseif status ==# '??'
+    let symbol = '?'
+  elseif status ==# 'UU' || status ==# 'AA'
+    let symbol = '!'
   endif
   
-  if status =~# '??'
-    let symbols .= '?'
+  if symbol !=# ''
+    let s:status_cache[full_path] = symbol
+    
+    let dir = fnamemodify(full_path, ':h')
+    while dir !=# s:git_root && dir !=# '/'
+      if !has_key(s:status_cache, dir)
+        let s:status_cache[dir] = '*'
+      endif
+      let dir = fnamemodify(dir, ':h')
+    endwhile
   endif
-  
-  if symbols !=# ''
-    let s:status_cache[full_path] = symbols
-  endif
-endfunction
-
-function! s:OnExit(job, status) abort
-  if a:status != 0
-    return
-  endif
-  
-  call s:CheckStash()
-  call s:UpdateDisplay()
 endfunction
 
 function! s:CheckStash() abort
+  if s:git_root ==# ''
+    return
+  endif
+  
   let cmd = ['git', '-C', s:git_root, 'rev-parse', '--verify', 'refs/stash']
   let job = job_start(cmd, {
         \ 'out_cb': function('s:OnStashCheck'),
         \ 'err_mode': 'nl',
+        \ 'exit_cb': function('s:OnStashExit'),
         \ })
   
   if job_status(job) ==# 'run'
@@ -119,71 +139,35 @@ endfunction
 function! s:OnStashCheck(channel, msg) abort
   if a:msg =~# '^[0-9a-f]\{40\}'
     let s:branch_info.has_stash = 1
-    call s:UpdateDisplay()
   endif
+endfunction
+
+function! s:OnStashExit(job, status) abort
+  call s:UpdateDisplay()
 endfunction
 
 function! s:UpdateDisplay() abort
-  let bufnr = ftx#GetBufnr()
-  if bufnr == -1
-    return
-  endif
+  call ftx#renderer#SetGitStatus(s:status_cache)
   
-  " build branch_status
-  let branch_status = ''
-  if get(s:branch_info, 'has_stash', 0)
-    let branch_status .= '$'
-  endif
-  if get(s:branch_info, 'ahead', 0) > 0
-    let branch_status .= '↑' . s:branch_info.ahead
-  endif
-  if get(s:branch_info, 'behind', 0) > 0
-    let branch_status .= '↓' . s:branch_info.behind
-  endif
-
-  for [path, status] in items(s:status_cache)
-    let full_status = status . branch_status
-    call ftx#renderer#SetGitStatus(path, full_status)
-  endfor
-
-  let tree = ftx#renderer#GetTree()
-  let lines = []
-  for node in tree
-    let indent = repeat('  ', node.depth)
-    let icon = node.is_dir ? (node.is_expanded ? '▾ ' : '▸ ') : '  '
-    let git = node.git_status !=# '' ? ' ' . node.git_status : ''
-    call add(lines, indent . icon . node.name . git)
-  endfor
-
-  let winid = bufwinid(bufnr)
-  if winid == -1
-    return
-  endif
-
-  let was_modifiable = getbufvar(bufnr, '&modifiable')
-  if !was_modifiable
-    call win_execute(winid, 'setlocal modifiable')
-  endif
-
-  let cur_lines = getbufline(bufnr, 1, '$')
-  if cur_lines !=# lines
-    call win_execute(winid, 'silent %delete _ | call setline(1, ' . string(lines) . ')')
-  endif
-
-  if !was_modifiable
-    call win_execute(winid, 'setlocal nomodifiable')
-  endif
+  call ftx#renderer#UpdateGitStatus()
+  
+  call ftx#UpdateStatusLine()
 endfunction
 
 function! s:FindGitRoot(path) abort
-  let path = fnamemodify(a:path, ':p')
+  let path = fnamemodify(a:path, ':p:h')
   
-  while path !=# '/' && path !=# ''
+  let max_depth = 20
+  let depth = 0
+  
+  while path !=# '/' && path !=# '' && depth < max_depth
     if isdirectory(path . '/.git')
       return path
     endif
     let path = fnamemodify(path, ':h')
+    let depth += 1
   endwhile
+  
   return ''
 endfunction
 
@@ -196,17 +180,21 @@ function! s:StopJobs() abort
   let s:jobs = {}
 endfunction
 
-function! s:CancelTimer() abort
-  if s:timer != -1
-    call timer_stop(s:timer)
-    let s:timer = -1
-  endif
-endfunction
-
 function! ftx#git#Cleanup() abort
-  call s:CancelTimer()
   call s:StopJobs()
   let s:git_root = ''
   let s:status_cache = {}
   let s:branch_info = {}
+  let s:status_lines = []
+endfunction
+
+function! ftx#git#GetBranchInfo() abort
+  return s:branch_info
+endfunction
+
+function! ftx#git#Refresh() abort
+  let root = ftx#GetRoot()
+  if root !=# ''
+    call ftx#git#UpdateStatus(root)
+  endif
 endfunction
