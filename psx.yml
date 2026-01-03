@@ -1,0 +1,26 @@
+# Custom files and folders
+version: 1
+
+project:
+  type: "" 
+
+rules:
+  # General
+  readme: error
+  license: warning
+  gitignore: warning
+  changelog: info
+  docs_folder: info
+  contributing: info
+  api_docs: warning
+  code_of_conduct: info
+  pull_request_template: info
+  issue_templates: info
+  editorconfig: info
+
+custom:
+  folders:
+    - path: "autoload"
+    - path: "plugin"
+    - path: "syntax"
+    - path: "test"
