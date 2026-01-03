@@ -1,0 +1,15 @@
+" Minimal vimrc for testing FTX
+" Copyright (c) 2025 m-mdy-m
+
+set nocompatible
+filetype off
+
+let &runtimepath .= ',' . expand('<sfile>:p:h:h')
+
+filetype plugin indent on
+syntax on
+
+set noswapfile
+set nobackup
+set nowritebackup
+set hidden
