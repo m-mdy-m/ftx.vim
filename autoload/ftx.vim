@@ -1,17 +1,15 @@
 " Copyright (c) 2026 m-mdy-m
 " MIT License
+" Main FTX entry point
 
-let s:bufnr = -1
 let s:root = ''
-let s:bufname_counter = 0
+let s:last_sync_buf = -1
 
 function! ftx#Open(...) abort
   let path = a:0 > 0 ? fnamemodify(a:1, ':p') : getcwd()
   
-  if !isdirectory(path)
-    echohl ErrorMsg
-    echo '[FTX] Not a directory: ' . path
-    echohl None
+  if !ftx#utils#IsDirectory(path)
+    call ftx#utils#EchoError('Not a directory: ' . path)
     return
   endif
   
@@ -26,8 +24,8 @@ function! ftx#Open(...) abort
   call s:CreateWindow()
   call ftx#Refresh()
   
-  if g:ftx_git_status
-    call timer_start(100, {-> ftx#git#UpdateStatus(s:root)})
+  if g:ftx_enable_git
+    call ftx#git#status#Update(s:root)
   endif
 endfunction
 
@@ -44,12 +42,7 @@ function! ftx#Close() abort
     return
   endif
   
-  let winid = bufwinid(s:bufnr)
-  if winid != -1
-    execute win_id2win(winid) . 'close'
-  endif
-  
-  let s:bufnr = -1
+  call ftx#core#window#Close()
 endfunction
 
 function! ftx#Refresh() abort
@@ -57,13 +50,8 @@ function! ftx#Refresh() abort
     return
   endif
   
-  let save_line = line('.')
-  let save_col = col('.')
-  
-  call ftx#renderer#Render(s:root)
-  
-  call cursor(save_line, save_col)
-  call s:UpdateStatusLine()
+  call ftx#ui#renderer#Render(s:root)
+  call ftx#UpdateStatusLine()
 endfunction
 
 function! ftx#Focus() abort
@@ -71,29 +59,11 @@ function! ftx#Focus() abort
     return
   endif
   
-  let winid = bufwinid(s:bufnr)
-  if winid != -1
-    call win_gotoid(winid)
-  endif
+  call ftx#core#window#Focus()
 endfunction
 
 function! ftx#IsOpen() abort
-  return s:bufnr != -1 && bufexists(s:bufnr)
-endfunction
-
-function! ftx#AutoClose() abort
-  if !g:ftx_auto_close || !ftx#IsOpen()
-    return
-  endif
-  
-  let wincount = winnr('$')
-  if wincount == 1 && bufnr('%') == s:bufnr
-    quit
-  endif
-endfunction
-
-function! ftx#Cleanup() abort
-  call ftx#git#Cleanup()
+  return ftx#core#buffer#Exists() && ftx#core#buffer#IsVisible()
 endfunction
 
 function! ftx#GetRoot() abort
@@ -101,85 +71,95 @@ function! ftx#GetRoot() abort
 endfunction
 
 function! ftx#GetBufnr() abort
-  return s:bufnr
-endfunction
-
-function! s:CreateWindow() abort
-  let pos = g:ftx_position ==# 'right' ? 'botright' : 'topleft'
-  execute pos . ' ' . g:ftx_width . 'vnew'
-  
-  let s:bufnr = bufnr('%')
-  let s:bufname_counter += 1
-  
-  setlocal buftype=nofile
-  setlocal bufhidden=hide
-  setlocal noswapfile
-  setlocal nobuflisted
-  setlocal nowrap
-  setlocal nonumber
-  setlocal norelativenumber
-  setlocal signcolumn=no
-  setlocal foldcolumn=0
-  setlocal nomodeline
-  setlocal nofoldenable
-  setlocal cursorline
-  setlocal filetype=ftx
-  
-  execute 'silent! file FTX_' . s:bufname_counter
-  
-  call s:SetupMappings()
-  call s:UpdateStatusLine()
-endfunction
-
-function! s:UpdateStatusLine() abort
-  if !ftx#IsOpen()
-    return
-  endif
-  
-  let bufnr = ftx#GetBufnr()
-  let dir_name = fnamemodify(s:root, ':t')
-  if dir_name ==# ''
-    let dir_name = '/'
-  endif
-  
-  let git_info = ftx#git#GetBranchInfo()
-  let status = ' ' . dir_name
-  
-  if !empty(git_info)
-    let branch = get(git_info, 'branch', '')
-    if branch !=# ''
-      let status .= ' [' . branch . ']'
-    endif
-    
-    if get(git_info, 'ahead', 0) > 0
-      let status .= ' ↑' . git_info.ahead
-    endif
-    if get(git_info, 'behind', 0) > 0
-      let status .= ' ↓' . git_info.behind
-    endif
-    if get(git_info, 'has_stash', 0)
-      let status .= ' $'
-    endif
-  endif
-  
-  call setbufvar(bufnr, '&statusline', status)
-endfunction
-
-function! s:SetupMappings() abort
-  nnoremap <buffer> <silent> o :call ftx#action#Open('edit')<CR>
-  nnoremap <buffer> <silent> <CR> :call ftx#action#Open('edit')<CR>
-  nnoremap <buffer> <silent> t :call ftx#action#Open('tabedit')<CR>
-  nnoremap <buffer> <silent> s :call ftx#action#Open('split')<CR>
-  nnoremap <buffer> <silent> v :call ftx#action#Open('vsplit')<CR>
-  nnoremap <buffer> <silent> r :call ftx#Refresh()<CR>
-  nnoremap <buffer> <silent> R :call ftx#action#RefreshGit()<CR>
-  nnoremap <buffer> <silent> I :call ftx#action#ToggleHidden()<CR>
-  nnoremap <buffer> <silent> q :call ftx#Close()<CR>
-  nnoremap <buffer> <silent> <2-LeftMouse> :call ftx#action#Open('edit')<CR>
-  nnoremap <buffer> <silent> - :call ftx#action#GoUp()<CR>
-  nnoremap <buffer> <silent> ~ :call ftx#action#GoHome()<CR>
+  return ftx#core#buffer#Get()
 endfunction
 
 function! ftx#UpdateStatusLine() abort
-  call s:UpdateStatusLine()
+  call ftx#core#statusline#Update(s:root)
+endfunction
+
+function! ftx#AutoClose() abort
+  if !g:ftx_auto_close || !ftx#IsOpen()
+    return
+  endif
+  
+  if ftx#core#window#IsLast() && ftx#core#window#IsFTXWindow()
+    quit
+  endif
+endfunction
+
+function! ftx#AutoSync() abort
+  if !g:ftx_auto_sync || !ftx#IsOpen()
+    return
+  endif
+  
+  let current_buf = bufnr('%')
+  
+  if current_buf == s:last_sync_buf || current_buf == ftx#GetBufnr()
+    return
+  endif
+  
+  let s:last_sync_buf = current_buf
+  
+  let file = expand('%:p')
+  if empty(file) || !ftx#utils#IsReadable(file)
+    return
+  endif
+  
+  let file_dir = ftx#utils#GetParentDir(file)
+  if file_dir =~# '^' . escape(s:root, '\')
+    call ftx#ui#renderer#SyncToFile(file)
+  endif
+endfunction
+
+function! ftx#Cleanup() abort
+  call ftx#git#status#Cleanup()
+  call ftx#git#branch#Cleanup()
+  call ftx#git#blame#Cleanup()
+  call ftx#features#marks#Clear()
+endfunction
+
+function! s:CreateWindow() abort
+  call ftx#core#window#Create()
+  call s:SetupMappings()
+endfunction
+
+function! s:SetupMappings() abort
+  " Basic operations
+  nnoremap <buffer> <silent> o  <Cmd>call ftx#actions#Open('edit')<CR>
+  nnoremap <buffer> <silent> <CR> <Cmd>call ftx#actions#Open('edit')<CR>
+  nnoremap <buffer> <silent> t  <Cmd>call ftx#actions#Open('tabedit')<CR>
+  nnoremap <buffer> <silent> s  <Cmd>call ftx#actions#Open('split')<CR>
+  nnoremap <buffer> <silent> v  <Cmd>call ftx#actions#Open('vsplit')<CR>
+  nnoremap <buffer> <silent> <2-LeftMouse> <Cmd>call ftx#actions#Open('edit')<CR>
+  
+  " Navigation
+  nnoremap <buffer> <silent> - :call ftx#actions#GoUp()<CR>
+  nnoremap <buffer> <silent> ~ :call ftx#actions#GoHome()<CR>
+  
+  " Refresh & toggles
+  nnoremap <buffer> <silent> r :call ftx#Refresh()<CR>
+  nnoremap <buffer> <silent> R :call ftx#actions#RefreshGit()<CR>
+  nnoremap <buffer> <silent> I :call ftx#actions#ToggleHidden()<CR>
+  
+  " Tree operations
+  nnoremap <buffer> <silent> O :call ftx#ui#renderer#ExpandAll() \| call ftx#Refresh()<CR>
+  nnoremap <buffer> <silent> C :call ftx#ui#renderer#CollapseAll() \| call ftx#Refresh()<CR>
+  
+  " Mark operations
+  nnoremap <buffer> <silent> m :call ftx#features#marks#Toggle()<CR>
+  nnoremap <buffer> <silent> M :call ftx#features#marks#Clear()<CR>
+  nnoremap <buffer> <silent> mo :call ftx#features#marks#OpenAll()<CR>
+  nnoremap <buffer> <silent> mg :call ftx#features#marks#StageAll()<CR>
+  
+  " File operations
+  nnoremap <buffer> <silent> cd :call ftx#features#terminal#Open()<CR>
+  
+  " Git operations
+  nnoremap <buffer> <silent> gb :call ftx#git#blame#Show()<CR>
+  nnoremap <buffer> <silent> gi :call ftx#git#branch#ShowInfo()<CR>
+  
+  " Help & close
+  nnoremap <buffer> <silent> ? :call ftx#features#help#Show()<CR>
+  nnoremap <buffer> <silent> q :call ftx#Close()<CR>
 endfunction
