@@ -1,4 +1,4 @@
-name: Test
+name: CI
 
 on:
   push:
@@ -21,7 +21,15 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      
+      - name: Cache Vim build
+        uses: actions/cache@v4
+        with:
+          path: |
+            vim
+            /usr/local/bin/vim
+          key: ${{ runner.os }}-vim-${{ matrix.vim_version }}
       
       - name: Install dependencies
         run: |
@@ -50,12 +58,18 @@ jobs:
       - name: Verify Vim version
         run: |
           vim --version | head -n1
-          vim --version | grep '+job'
-          vim --version | grep '+timers'
+          vim --version | grep '+job' || exit 1
+          vim --version | grep '+timers' || exit 1
+          vim --version | grep '+popupwin' || exit 1
       
       - name: Check feature support
         run: |
-          vim -u NONE -c 'echo has("job") && has("timers")' -c 'quit' 2>&1 | grep '^1$' || exit 1
+          vim -u NONE -c 'echo has("job") && has("timers") && has("popupwin")' -c 'quit' 2>&1 | grep '^1$' || exit 1
+      
+      - name: Generate help tags
+        run: |
+          vim -u NONE -c 'helptags doc' -c 'quit'
+          test -f doc/tags || exit 1
       
       - name: Run tests
         run: make test
@@ -63,9 +77,10 @@ jobs:
       - name: Verify installation
         run: |
           make install
-          test -d ~/.vim/pack/ftx/start/ftx/plugin
-          test -d ~/.vim/pack/ftx/start/ftx/autoload
-          test -d ~/.vim/pack/ftx/start/ftx/syntax
+          test -d ~/.vim/pack/ftx/start/ftx/plugin || exit 1
+          test -d ~/.vim/pack/ftx/start/ftx/autoload || exit 1
+          test -d ~/.vim/pack/ftx/start/ftx/syntax || exit 1
+          test -f ~/.vim/pack/ftx/start/ftx/doc/ftx.txt || exit 1
       
       - name: Test FTX commands
         run: |
@@ -74,35 +89,139 @@ jobs:
             -c "runtime plugin/ftx.vim" \
             -c "if exists(':FTX') | echo 'OK' | else | cquit 1 | endif" \
             -c "quit"
+      
+      - name: Test case-insensitive commands
+        run: |
+          vim -u NONE \
+            -c "set runtimepath+=~/.vim/pack/ftx/start/ftx" \
+            -c "runtime plugin/ftx.vim" \
+            -c "if exists(':ftx') && exists(':Ftx') | echo 'OK' | else | cquit 1 | endif" \
+            -c "quit"
+      
+      - name: Test configuration options
+        run: |
+          vim -u NONE \
+            -c "set runtimepath+=~/.vim/pack/ftx/start/ftx" \
+            -c "let g:ftx_width = 40" \
+            -c "let g:ftx_enable_git = 1" \
+            -c "runtime plugin/ftx.vim" \
+            -c "if g:ftx_width == 40 | echo 'OK' | else | cquit 1 | endif" \
+            -c "quit"
   
   lint:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Check file structure
         run: |
-          test -f plugin/ftx.vim
-          test -f autoload/ftx.vim
-          test -f autoload/ftx/renderer.vim
-          test -f autoload/ftx/git.vim
-          test -f autoload/ftx/action.vim
-          test -f autoload/ftx/style.vim
-          test -f syntax/ftx.vim
-          test -f test/test_ftx.vim
-          test -f docs/ftx.md
-          test -f README.md
-          test -f LICENSE
-          test -f Makefile
+          # Core files
+          test -f plugin/ftx.vim || exit 1
+          test -f autoload/ftx.vim || exit 1
+          test -f autoload/ftx/renderer.vim || exit 1
+          test -f autoload/ftx/git.vim || exit 1
+          test -f autoload/ftx/action.vim || exit 1
+          test -f autoload/ftx/style.vim || exit 1
+          test -f syntax/ftx.vim || exit 1
+          test -f test/test_ftx.vim || exit 1
+          
+          # Documentation
+          test -f docs/FILE_TREE.md || exit 1
+          test -f doc/ftx.txt || exit 1
+          test -f README.md || exit 1
+          test -f LICENSE || exit 1
+          test -f Makefile || exit 1
+          test -f CHANGELOG.md || exit 1
       
       - name: Check license headers
         run: |
-          grep -q "Copyright (c) 2026 m-mdy-m" plugin/ftx.vim
-          grep -q "MIT License" plugin/ftx.vim
+          grep -q "Copyright (c) 2026 m-mdy-m" plugin/ftx.vim || exit 1
+          grep -q "MIT License" plugin/ftx.vim || exit 1
+          grep -q "Copyright (c) 2026 m-mdy-m" autoload/ftx.vim || exit 1
       
       - name: Check function naming
         run: |
           ! grep -rn "^function! [a-z]" autoload/ || \
             (echo "Error: Functions must start with capital or contain :"; exit 1)
+      
+      - name: Validate help tags
+        run: |
+          # Check help file has required sections
+          grep -q '\*ftx-contents\*' doc/ftx.txt || exit 1
+          grep -q '\*ftx-commands\*' doc/ftx.txt || exit 1
+          grep -q '\*ftx-configuration\*' doc/ftx.txt || exit 1
+          grep -q '\*:FTX\*' doc/ftx.txt || exit 1
+          grep -q '\*:FTXToggle\*' doc/ftx.txt || exit 1
+      
+      - name: Check configuration variables
+        run: |
+          # Verify all config variables are documented
+          grep -q 'g:ftx_width' doc/ftx.txt || exit 1
+          grep -q 'g:ftx_position' doc/ftx.txt || exit 1
+          grep -q 'g:ftx_enable_git' doc/ftx.txt || exit 1
+          grep -q 'g:ftx_git_blame' doc/ftx.txt || exit 1
+          grep -q 'g:ftx_icon_expanded' doc/ftx.txt || exit 1
+  
+  git-features:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup git repository
+        run: |
+          git config --global user.name "Test User"
+          git config --global user.email "test@example.com"
+          git init test_repo
+          cd test_repo
+          echo "test" > file.txt
+          git add file.txt
+          git commit -m "Initial commit"
+      
+      - name: Install Vim with git support
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y vim git
+      
+      - name: Install FTX
+        run: make install
+      
+      - name: Test git integration
+        run: |
+          cd test_repo
+          vim -u NONE \
+            -c "set runtimepath+=~/.vim/pack/ftx/start/ftx" \
+            -c "let g:ftx_enable_git = 1" \
+            -c "runtime plugin/ftx.vim" \
+            -c "FTX" \
+            -c "sleep 1" \
+            -c "quit"
+  
+  documentation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check documentation completeness
+        run: |
+          # Verify README has all sections
+          grep -q "## Features" README.md || exit 1
+          grep -q "## Requirements" README.md || exit 1
+          grep -q "## Installation" README.md || exit 1
+          grep -q "## Configuration" README.md || exit 1
+          
+          # Verify CHANGELOG is up to date
+          grep -q "## \[0.2.0\]" CHANGELOG.md || exit 1
+          
+          # Check for dead links (basic check)
+          ! grep -r "http://example.com" docs/ || exit 1
+      
+      - name: Verify examples
+        run: |
+          test -f examples/examples.config.vim || exit 1
+          grep -q "let g:ftx_width" examples/examples.config.vim || exit 1
