@@ -1,0 +1,108 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        vim_version:
+          - v8.2.0000
+          - v9.0.0000
+          - v9.1.0000
+          - nightly
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential libncurses5-dev
+      
+      - name: Install Vim ${{ matrix.vim_version }}
+        run: |
+          if [ "${{ matrix.vim_version }}" = "nightly" ]; then
+            git clone --depth 1 https://github.com/vim/vim.git
+          else
+            git clone --depth 1 --branch ${{ matrix.vim_version }} https://github.com/vim/vim.git
+          fi
+          
+          cd vim/src
+          ./configure \
+            --with-features=huge \
+            --enable-multibyte \
+            --enable-python3interp \
+            --with-python3-config-dir=/usr/lib/python3.*/config-* \
+            --prefix=/usr/local
+          
+          make -j$(nproc)
+          sudo make install
+      
+      - name: Verify Vim version
+        run: |
+          vim --version | head -n1
+          vim --version | grep '+job'
+          vim --version | grep '+timers'
+      
+      - name: Check feature support
+        run: |
+          vim -u NONE -c 'echo has("job") && has("timers")' -c 'quit' 2>&1 | grep '^1$' || exit 1
+      
+      - name: Run tests
+        run: make test
+      
+      - name: Verify installation
+        run: |
+          make install
+          test -d ~/.vim/pack/ftx/start/ftx/plugin
+          test -d ~/.vim/pack/ftx/start/ftx/autoload
+          test -d ~/.vim/pack/ftx/start/ftx/syntax
+      
+      - name: Test FTX commands
+        run: |
+          vim -u NONE \
+            -c "set runtimepath+=~/.vim/pack/ftx/start/ftx" \
+            -c "runtime plugin/ftx.vim" \
+            -c "if exists(':FTX') | echo 'OK' | else | cquit 1 | endif" \
+            -c "quit"
+  
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Check file structure
+        run: |
+          test -f plugin/ftx.vim
+          test -f autoload/ftx.vim
+          test -f autoload/ftx/renderer.vim
+          test -f autoload/ftx/git.vim
+          test -f autoload/ftx/action.vim
+          test -f autoload/ftx/style.vim
+          test -f syntax/ftx.vim
+          test -f test/test_ftx.vim
+          test -f docs/ftx.md
+          test -f README.md
+          test -f LICENSE
+          test -f Makefile
+      
+      - name: Check license headers
+        run: |
+          grep -q "Copyright (c) 2025 m-mdy-m" plugin/ftx.vim
+          grep -q "MIT License" plugin/ftx.vim
+      
+      - name: Check function naming
+        run: |
+          ! grep -rn "^function! [a-z]" autoload/ || \
+            (echo "Error: Functions must start with capital or contain :"; exit 1)
