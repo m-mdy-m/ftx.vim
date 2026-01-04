@@ -69,87 +69,21 @@ function! ftx#ui#style#Syntax() abort
 endfunction
 
 function! ftx#ui#style#Highlight() abort
-  " Check if user has custom highlights defined
-  " If not, use defaults
-  if !hlexists('FTXDir')
     highlight default FTXDir ctermfg=75 guifg=#5fafd7 gui=bold cterm=bold
-  endif
-  if !hlexists('FTXFile')
     highlight default FTXFile ctermfg=252 guifg=#d0d0d0
-  endif
-  if !hlexists('FTXHidden')
     highlight default FTXHidden ctermfg=243 guifg=#767676 gui=italic cterm=italic
-  endif
-  if !hlexists('FTXSourceCode')
     highlight default FTXSourceCode ctermfg=185 guifg=#d7d75f
-  endif
-  
-  if !hlexists('FTXDirExpanded')
     highlight default FTXDirExpanded ctermfg=75 guifg=#5fafd7
-  endif
-  
-  if !hlexists('FTXDirCollapsed')
     highlight default FTXDirCollapsed ctermfg=75 guifg=#5fafd7
-  endif
-  
-  if !hlexists('FTXFileIcon')
     highlight default FTXFileIcon ctermfg=245 guifg=#8a8a8a
-  endif
-  
-  if !hlexists('FTXSymlink')
     highlight default FTXSymlink ctermfg=51 guifg=#00ffff gui=italic cterm=italic
-  endif
-  
-  if !hlexists('FTXMarked')
     highlight default FTXMarked ctermfg=214 guifg=#ffaf00 gui=bold cterm=bold
-  endif
-  
-  if !hlexists('FTXGitStaged')
     highlight default FTXGitStaged ctermfg=113 guifg=#87d75f gui=bold cterm=bold
-  endif
-  
-  if !hlexists('FTXGitModified')
     highlight default FTXGitModified ctermfg=221 guifg=#ffd787 gui=bold cterm=bold
-  endif
-  
-  if !hlexists('FTXGitDeleted')
     highlight default FTXGitDeleted ctermfg=203 guifg=#ff5f5f gui=bold cterm=bold
-  endif
-  
-  if !hlexists('FTXGitRenamed')
     highlight default FTXGitRenamed ctermfg=141 guifg=#af87ff
-  endif
-  
-  if !hlexists('FTXGitUntracked')
     highlight default FTXGitUntracked ctermfg=245 guifg=#8a8a8a
-  endif
-  
-  if !hlexists('FTXGitIgnored')
     highlight default FTXGitIgnored ctermfg=238 guifg=#444444 gui=italic cterm=italic
-  endif
-  
-  if !hlexists('FTXGitConflict')
     highlight default FTXGitConflict ctermfg=197 guifg=#ff005f gui=bold cterm=bold
-  endif
-  
-  if !hlexists('FTXBorder')
     highlight default FTXBorder ctermfg=240 guifg=#585858
-  endif
-  
-  highlight default link ftxDir FTXDir
-  highlight default link ftxFile FTXFile
-  highlight default link ftxHidden FTXHidden
-  highlight default link ftxSourceCode FTXSourceCode
-  highlight default link ftxDirExpanded FTXDirExpanded
-  highlight default link ftxDirCollapsed FTXDirCollapsed
-  highlight default link ftxFileIcon FTXFileIcon
-  highlight default link ftxSymlink FTXSymlink
-  highlight default link ftxMarked FTXMarked
-  highlight default link ftxGitStaged FTXGitStaged
-  highlight default link ftxGitModified FTXGitModified
-  highlight default link ftxGitDeleted FTXGitDeleted
-  highlight default link ftxGitRenamed FTXGitRenamed
-  highlight default link ftxGitUntracked FTXGitUntracked
-  highlight default link ftxGitIgnored FTXGitIgnored
-  highlight default link ftxGitConflict FTXGitConflict
 endfunction
