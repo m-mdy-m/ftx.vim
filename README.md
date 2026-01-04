@@ -110,12 +110,6 @@ Open with Directory:
 
 ## Documentation
 
-In Vim:
-
-    :help ftx
-    :help ftx-configuration
-    :help ftx-commands
-
 Detailed Documentation:
 - [Complete Guide](docs/README.md) - Start here
 - [Configuration](docs/configuration.md) - All settings
