@@ -7,11 +7,11 @@ endif
 
 let b:current_syntax = 'ftx'
 
-call ftx#style#Syntax()
+call ftx#ui#style#Syntax()
 
 augroup ftx_syntax
   autocmd! * <buffer>
-  autocmd ColorScheme <buffer> call ftx#style#Highlight()
+  autocmd ColorScheme <buffer> call ftx#ui#style#Highlight()
 augroup END
 
-call ftx#style#Highlight()
+call ftx#ui#style#Highlight()
