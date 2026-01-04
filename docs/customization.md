@@ -82,24 +82,40 @@ let g:ftx_git_icon_unmerged = 'C'
 Add to your colorscheme or `.vimrc`:
 
 ```vim
-" Directory
-highlight FTXDir guifg=#0087ff ctermfg=blue gui=bold
+" Directories (bold blue)
+highlight FTXDir ctermfg=75 guifg=#5fafd7 gui=bold cterm=bold
 
-" File
-highlight FTXFile guifg=#d0d0d0 ctermfg=white
+" Regular files (light gray)
+highlight FTXFile ctermfg=252 guifg=#d0d0d0
 
-" Icons
-highlight FTXDirIcon guifg=#5a5a5a ctermfg=gray
+" Hidden files (dimmed gray, italic)
+highlight FTXHidden ctermfg=243 guifg=#767676 gui=italic cterm=italic
 
-" Git status
-highlight FTXGitStaged guifg=#5faf5f ctermfg=green gui=bold
-highlight FTXGitModified guifg=#d7af5f ctermfg=yellow gui=bold
-highlight FTXGitUntracked guifg=#808080 ctermfg=gray
-highlight FTXGitDeleted guifg=#d75f5f ctermfg=red gui=bold
-highlight FTXGitConflict guifg=#af5fd7 ctermfg=magenta gui=bold
+" Executable files (bright green, bold)
+highlight FTXExecutable ctermfg=118 guifg=#87ff00 gui=bold cterm=bold
+
+" Tree icons
+highlight FTXDirExpanded ctermfg=75 guifg=#5fafd7
+highlight FTXDirCollapsed ctermfg=75 guifg=#5fafd7
+highlight FTXFileIcon ctermfg=245 guifg=#8a8a8a
+
+" Symlinks (cyan, italic)
+highlight FTXSymlink ctermfg=51 guifg=#00ffff gui=italic cterm=italic
+
+" Mark indicator (orange, bold)
+highlight FTXMarked ctermfg=214 guifg=#ffaf00 gui=bold cterm=bold
+
+" Git status colors
+highlight FTXGitStaged ctermfg=113 guifg=#87d75f gui=bold cterm=bold
+highlight FTXGitModified ctermfg=221 guifg=#ffd787 gui=bold cterm=bold
+highlight FTXGitDeleted ctermfg=203 guifg=#ff5f5f gui=bold cterm=bold
+highlight FTXGitRenamed ctermfg=141 guifg=#af87ff
+highlight FTXGitUntracked ctermfg=245 guifg=#8a8a8a
+highlight FTXGitIgnored ctermfg=238 guifg=#444444 gui=italic cterm=italic
+highlight FTXGitConflict ctermfg=197 guifg=#ff005f gui=bold cterm=bold
 
 " Popup border
-highlight FTXBorder guifg=#3a3a3a ctermfg=darkgray
+highlight FTXBorder ctermfg=240 guifg=#585858
 ```
 
 ## Behavior Customization
