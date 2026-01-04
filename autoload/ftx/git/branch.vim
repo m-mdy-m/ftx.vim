@@ -16,6 +16,8 @@ function! ftx#git#branch#ParseLine(line) abort
         \ 'behind': len(behind_match) > 1 ? str2nr(behind_match[1]) : 0,
         \ 'has_stash': 0
         \ }
+  
+  call ftx#UpdateStatusLine()
 endfunction
 
 function! ftx#git#branch#CheckStash() abort
