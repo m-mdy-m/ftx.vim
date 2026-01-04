@@ -59,11 +59,11 @@ function! ftx#ui#style#Syntax() abort
     endif
   endif
   
-  syntax match ftxHidden /\.\w\+/ contained
+  syntax match ftxHidden /\.\f\+/ contained
   
-  syntax match ftxDir /[^/]\+\/$/ contains=ftxDirExpanded,ftxDirCollapsed,ftxMarked,ftxGitStaged,ftxGitModified,ftxGitDeleted,ftxGitUntracked,ftxGitIgnored,ftxGitConflict,ftxGitRenamed
+  syntax match ftxDir  /\f\+\/$/ contains=ftxDirExpanded,ftxDirCollapsed,ftxMarked,ftxGitStaged,ftxGitModified,ftxGitDeleted,ftxGitUntracked,ftxGitIgnored,ftxGitConflict,ftxGitRenamed
   
-  syntax match ftxFile /[^/]\+$/ contains=ftxFileIcon,ftxSymlink,ftxMarked,ftxGitStaged,ftxGitModified,ftxGitDeleted,ftxGitUntracked,ftxGitIgnored,ftxGitConflict,ftxGitRenamed,ftxHidden
+  syntax match ftxFile  /\f\+$/ contains=ftxFileIcon,ftxSymlink,ftxMarked,ftxGitStaged,ftxGitModified,ftxGitDeleted,ftxGitUntracked,ftxGitIgnored,ftxGitConflict,ftxGitRenamed,ftxHidden
   " 
   syntax cluster ftxAll contains=ftxDir,ftxFile,ftxDirExpanded,ftxDirCollapsed,ftxFileIcon,ftxSymlink,ftxMarked,ftxGitStaged,ftxGitModified,ftxGitDeleted,ftxGitUntracked,ftxGitIgnored,ftxGitConflict,ftxGitRenamed,ftxHidden
 endfunction
