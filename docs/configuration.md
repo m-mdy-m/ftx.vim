@@ -112,6 +112,33 @@ let g:ftx_git_icon_ignored = '◌'
 let g:ftx_git_icon_unmerged = '!'
 ```
 
+**File Type Icons**
+```vim
+let g:ftx_icons = {
+      \ 'vim': '[V]',
+      \ 'md': '<md>',
+      \ }
+```
+
+**Special File Icons**
+```vim
+let g:ftx_special_icons = {
+      \ 'README': '[R]',
+      \ 'LICENSE': '',
+      \ 'Makefile': '',
+      \ '.gitignore': '',
+      \ }
+```
+
+**File Type Colors**
+```vim
+let g:ftx_colors = {
+      \ 'vim': 'guifg=#019733 ctermfg=35',
+      \ 'py': 'guifg=#3572A5 ctermfg=67',
+      \ 'js': 'guifg=#F1E05A ctermfg=221',
+      \ }
+```
+
 ## Feature Settings
 
 **Enable Marks**
