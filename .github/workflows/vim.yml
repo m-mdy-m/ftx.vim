@@ -1,0 +1,52 @@
+name: Vim
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+          - ubuntu-latest
+        version:
+          - nightly
+          - v9.1.0000
+          - v9.0.0000
+          - v8.2.5136
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Vim
+        uses: rhysd/action-setup-vim@v1
+        id: vim
+        with:
+          version: ${{ matrix.version }}
+      
+      - name: Verify Vim features
+        run: |
+          ${{ steps.vim.outputs.executable }} --version
+          ${{ steps.vim.outputs.executable }} -u NONE -c 'echo has("job") && has("timers") && has("popupwin")' -c 'quit' 2>&1 | grep '^1$' || exit 1
+      
+      - name: Verify installation
+        run: make install
+      
+      - name: Test FTX commands
+        env:
+          VIM: ${{ steps.vim.outputs.executable }}
+        run: |
+          ${{ steps.vim.outputs.executable }} -u NONE \
+            -c "set runtimepath+=~/.vim/pack/ftx/start/ftx" \
+            -c "runtime plugin/ftx.vim" \
+            -c "if exists(':FTX') | echo 'OK' | else | cquit 1 | endif" \
+            -c "quit"
