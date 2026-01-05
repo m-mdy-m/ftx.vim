@@ -302,7 +302,33 @@ New configuration variables:
   - Help tag generation verification
   - Multiple Vim versions (8.2, 9.0, 9.1, nightly)
 
-[Released]: https://github.com/m-mdy-m/ftx.vim/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.3.0
-[0.2.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.2.0
-[0.1.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.1.0
+
+## [0.4.0] - 2026-01-05
+
+### Added
+
+* Full support for file-specific icons and colors
+* New documentation for icons, colors, and customization
+* New commands and configuration options for modular codebase
+* Example configuration and updated screenshots for easier onboarding
+
+### Changed
+
+* Refactored regex and syntax handling for better color highlighting
+* Updated internal logic for modular code
+* Improved CI and build scripts
+
+### Fixed
+
+* Fixed syntax-style loading to avoid startup errors
+* Corrected display of colors and highlights
+* Fixed git status propagation and statusline issues
+
+### Documentation
+
+* Updated README and docs for clarity and examples
+* Added modular codebase guide and customization examples
+
+[Unreleased]: https://github.com/m-mdy-m/ftx.vim/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.4.0
