@@ -330,5 +330,5 @@ New configuration variables:
 * Updated README and docs for clarity and examples
 * Added modular codebase guide and customization examples
 
-[Unreleased]: https://github.com/m-mdy-m/ftx.vim/compare/v0.4.0...HEAD
+[Released]: https://github.com/m-mdy-m/ftx.vim/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.4.0
