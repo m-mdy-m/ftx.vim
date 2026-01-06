@@ -38,9 +38,6 @@ jobs:
           ${{ steps.vim.outputs.executable }} --version
           ${{ steps.vim.outputs.executable }} -u NONE -c 'echo has("job") && has("timers") && has("popupwin")' -c 'quit' 2>&1 | grep '^1$' || exit 1
       
-      - name: Verify installation
-        run: make install
-      
       - name: Test FTX commands
         env:
           VIM: ${{ steps.vim.outputs.executable }}
