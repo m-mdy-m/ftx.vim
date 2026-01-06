@@ -6,7 +6,7 @@
 " ----------------------------------------------------------------------
 
 let s:wait_groups = {}
-function! ftx#async#waiter#waitgroup() abort
+function! ftx#async#internal#waiter#waitgroup() abort
   let wg_id = string(localtime()) . '_' . string(rand())
   let s:wait_groups[wg_id] = {
         \ 'counter': 0,
@@ -15,7 +15,7 @@ function! ftx#async#waiter#waitgroup() abort
   return wg_id
 endfunction
 
-function! ftx#async#waiter#wg_add(wg_id, delta) abort
+function! ftx#async#internal#waiter#wg_add(wg_id, delta) abort
   if !has_key(s:wait_groups, a:wg_id)
     throw 'WaitGroup not found'
   endif
@@ -29,13 +29,13 @@ function! ftx#async#waiter#wg_add(wg_id, delta) abort
   
   if wg.counter == 0
     for Callback in wg.callbacks
-      call ftx#async#queue#schedule(Callback)
+      call ftx#async#internal#queue#schedule(Callback)
     endfor
     let wg.callbacks = []
   endif
 endfunction
 
-function! ftx#async#waiter#wg_wait(wg_id, callback) abort
+function! ftx#async#internal#waiter#wg_wait(wg_id, callback) abort
   if !has_key(s:wait_groups, a:wg_id)
     throw 'WaitGroup not found'
   endif
@@ -44,12 +44,12 @@ function! ftx#async#waiter#wg_wait(wg_id, callback) abort
   
   if wg.counter == 0
     " Already done, call immediately
-    call ftx#async#queue#schedule(a:callback)
+    call ftx#async#internal#queue#schedule(a:callback)
   else
     call add(wg.callbacks, a:callback)
   endif
 endfunction
 
-function! ftx#async#waiter#wg_done(wg_id) abort
-  call ftx#async#waiter#wg_add(a:wg_id, -1)
+function! ftx#async#internal#waiter#wg_done(wg_id) abort
+  call ftx#async#internal#waiter#wg_add(a:wg_id, -1)
 endfunction
