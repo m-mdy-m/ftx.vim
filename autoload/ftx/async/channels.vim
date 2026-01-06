@@ -8,7 +8,11 @@
 let s:channels = {}
 
 function! ftx#async#channels#channel() abort
-  let ch_id = string(localtime()) . '_' . string(rand())
+  let ch_id = printf('%d_%d_%d', reltime()[0], reltime()[1], rand())
+  while has_key(s:channels, ch_id)
+    let ch_id = printf('%d_%d_%d', reltime()[0], reltime()[1], rand())
+  endwhile
+
   let s:channels[ch_id] = {
         \ 'buffer': [],
         \ 'closed': 0,
@@ -29,9 +33,8 @@ function! ftx#async#channels#send(ch_id, value) abort
   endif
   
   if !empty(ch.receivers)
-    let s:receiver = remove(ch.receivers, 0)
-    echo "REC " . string(s:receiver)
-    call ftx#async#queue#schedule(s:receiver, a:value)
+    let Receiver = remove(ch.receivers, 0)
+    call ftx#async#queue#schedule(Receiver, a:value)
   else
     call add(ch.buffer, a:value)
   endif
@@ -59,7 +62,7 @@ function! ftx#async#channels#close(ch_id) abort
 endfunction
 function! ftx#async#channels#is_closed(ch_id) abort
   if !has_key(s:channels, a:ch_id)
-    return 1
+    throw 'Channel not found'
   endif
   return s:channels[a:ch_id].closed
 endfunction
