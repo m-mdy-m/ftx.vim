@@ -28,8 +28,8 @@ function! ftx#async#waiter#wg_add(wg_id, delta) abort
   endif
   
   if wg.counter == 0
-    for s:callback in wg.callbacks
-      call ftx#async#queue#schedule(s:callback)
+    for Callback in wg.callbacks
+      call ftx#async#queue#schedule(Callback)
     endfor
     let wg.callbacks = []
   endif
