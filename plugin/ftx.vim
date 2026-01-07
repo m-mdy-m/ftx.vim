@@ -15,9 +15,9 @@ if exists('g:loaded_ftx')
 endif
 let g:loaded_ftx = 1
 
-if !has('job') || !has('timers')
+if !has('job') && !has('nvim') || !has('timers') && !has('nvim')
   echohl ErrorMsg
-  echo '[FTX] Requires Vim 8.0+ with +job and +timers'
+  echo '[FTX] Requires Vim 8+ with +job and +timers or Neovim'
   echohl None
   finish
 endif
