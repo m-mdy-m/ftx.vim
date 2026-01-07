@@ -27,21 +27,25 @@ let g:ftx_position = get(g:, 'ftx_position', 'left')
 let g:ftx_show_hidden = get(g:, 'ftx_show_hidden', 1)
 let g:ftx_sort_dirs_first = get(g:, 'ftx_sort_dirs_first', 1)
 let g:ftx_auto_close = get(g:, 'ftx_auto_close', 0)
-let g:ftx_auto_sync = get(g:, 'ftx_auto_sync', 1)
+let g:ftx_auto_sync = get(g:, 'ftx_auto_sync', 0)
 let g:ftx_close_on_open = get(g:, 'ftx_close_on_open', 0)
+" Icon settings
 let g:ftx_enable_icons = get(g:, 'ftx_enable_icons', 1)
 let g:ftx_icon_root = get(g:, 'ftx_icon_root', '')
 let g:ftx_icon_expanded = get(g:, 'ftx_icon_expanded', '▾')
 let g:ftx_icon_collapsed = get(g:, 'ftx_icon_collapsed', '▸')
 let g:ftx_icon_file = get(g:, 'ftx_icon_file', '')
 let g:ftx_icon_symlink = get(g:, 'ftx_icon_symlink', '→')
+" Mark settings
 let g:ftx_enable_marks = get(g:, 'ftx_enable_marks', 1)
 let g:ftx_icon_marked = get(g:, 'ftx_icon_marked', '✓')
+" Git settings
 let g:ftx_enable_git = get(g:, 'ftx_enable_git', 1)
 let g:ftx_git_status = get(g:, 'ftx_git_status', 1)
-let g:ftx_git_update_time = get(g:, 'ftx_git_update_time', 1000)
+let g:ftx_git_update_time = get(g:, 'ftx_git_update_time', 2000)
 let g:ftx_git_blame = get(g:, 'ftx_git_blame', 0)
 let g:ftx_show_ignored = get(g:, 'ftx_show_ignored', 0)
+" Git icons
 let g:ftx_git_icon_added = get(g:, 'ftx_git_icon_added', '+')
 let g:ftx_git_icon_modified = get(g:, 'ftx_git_icon_modified', '*')
 let g:ftx_git_icon_deleted = get(g:, 'ftx_git_icon_deleted', '-')
@@ -52,6 +56,7 @@ let g:ftx_git_icon_unmerged = get(g:, 'ftx_git_icon_unmerged', '!')
 let g:ftx_icons = get(g:, 'ftx_icons', {})
 let g:ftx_special_icons = get(g:, 'ftx_special_icons', {})
 let g:ftx_colors = get(g:, 'ftx_colors', {})
+" Commands
 command! -nargs=? -complete=customlist,ftx#internal#commands#ftx#complete FTX
       \ call ftx#internal#commands#ftx#execute(<q-mods>, [<f-args>])
 
@@ -86,6 +91,7 @@ command! FTXYankRelative call ftx#mapping#yank#relative()
 command! FTXYankName call ftx#mapping#yank#name()
 command! FTXCd call ftx#mapping#node#cd()
 command! FTXHelp call ftx#mapping#tree#show_help()
+" Global keymaps
 nnoremap <silent> <F2> :<C-u>FTXToggle<CR>
 nnoremap <silent> <F3> :<C-u>FTXRefresh<CR>
 nnoremap <silent> <leader>n :<C-u>FTXToggle<CR>
