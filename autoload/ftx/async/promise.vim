@@ -55,25 +55,44 @@ function! s:handle_promise(promise) abort
       if a:promise._state ==# 'fulfilled'
         if handler.on_fulfill isnot v:null
           let result = handler.on_fulfill(a:promise._value)
-          call s:resolve(handler.next, result)
+
+          if type(result) == type({}) && has_key(result, 'then')
+            call result.then(
+                  \ {v -> s:resolve(handler.next, v)},
+                  \ {e -> s:reject(handler.next, e)}
+                  \ )
+          else
+            call s:resolve(handler.next, result)
+          endif
         else
           call s:resolve(handler.next, a:promise._value)
         endif
+
       elseif a:promise._state ==# 'rejected'
         if handler.on_reject isnot v:null
           let result = handler.on_reject(a:promise._value)
-          call s:resolve(handler.next, result)
+
+          if type(result) == type({}) && has_key(result, 'then')
+            call result.then(
+                  \ {v -> s:resolve(handler.next, v)},
+                  \ {e -> s:reject(handler.next, e)}
+                  \ )
+          else
+            call s:resolve(handler.next, result)
+          endif
         else
           call s:reject(handler.next, a:promise._value)
         endif
       endif
+
     catch
       call s:reject(handler.next, v:exception)
     endtry
   endfor
-  
+
   let a:promise._handlers = []
 endfunction
+
 
 function! s:then(on_fulfill, ...) abort dict
   let OnReject = get(a:000, 0, v:null)

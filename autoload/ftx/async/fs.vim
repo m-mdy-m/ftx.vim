@@ -45,16 +45,3 @@ function! s:parse_entries(lines, base_path) abort
   
   return entries
 endfunction
-
-function! ftx#async#fs#exists(path) abort
-  return ftx#async#promise#resolve(filereadable(a:path) || isdirectory(a:path))
-endfunction
-
-function! ftx#async#fs#stat(path) abort
-  return ftx#async#promise#resolve({
-        \ 'exists': filereadable(a:path) || isdirectory(a:path),
-        \ 'is_dir': isdirectory(a:path),
-        \ 'is_file': filereadable(a:path),
-        \ 'is_link': getftype(a:path) ==# 'link',
-        \ })
-endfunction
