@@ -77,6 +77,7 @@ function! s:get_file_icon(node) abort
 endfunction
 
 function! s:syntax() abort
+  syntax clear
   syntax match FTXLine /^.*$/
   syntax match FTXIndent /^\s\+/
   if get(g:, 'ftx_enable_icons', 1)
@@ -118,6 +119,9 @@ function! s:syntax() abort
   for [ext, icon] in items(icons)
     if !empty(icon)
       execute 'syntax match FTXIcon' . toupper(ext) . ' /' . s:esc(icon) . '/'
+      
+      let pattern = '\v[^/\\]*\.' . ext . '$'
+      execute 'syntax match FTXFile' . toupper(ext) . ' /' . pattern . '/'
     endif
   endfor
   
@@ -125,9 +129,13 @@ function! s:syntax() abort
   for [name, icon] in items(special)
     if !empty(icon)
       let clean = substitute(name, '[^a-zA-Z0-9]', '', 'g')
+      
       execute 'syntax match FTXIconSpecial' . clean . ' /' . s:esc(icon) . '/'
+      
+      execute 'syntax match FTXFileSpecial' . clean . ' /\v' . s:esc(name) . '$/'
     endif
   endfor
+  
   syntax match FTXDir /\/$/
 endfunction
 
@@ -164,31 +172,38 @@ function! s:highlight() abort
     highlight default FTXGitUnmerged ctermfg=197 guifg=#ff005f gui=bold cterm=bold
   endif
   
-  " User colors
   let colors = get(g:, 'ftx_colors', {})
   let icons = get(g:, 'ftx_icons', {})
   
   for [ext, icon] in items(icons)
-    let group = 'FTXIcon' . toupper(ext)
+    let group_icon = 'FTXIcon' . toupper(ext)
+    let group_file = 'FTXFile' . toupper(ext)
+    
     if has_key(colors, ext) && !empty(colors[ext])
-      execute 'highlight! ' . group . ' ' . colors[ext]
+      execute 'highlight! ' . group_icon . ' ' . colors[ext]
+      execute 'highlight! ' . group_file . ' ' . colors[ext]
     else
-      execute 'highlight default ' . group . ' ctermfg=245 guifg=#8a8a8a'
+      execute 'highlight default ' . group_icon . ' ctermfg=245 guifg=#8a8a8a'
+      execute 'highlight default ' . group_file . ' ctermfg=245 guifg=#8a8a8a'
     endif
   endfor
   
   let special = get(g:, 'ftx_special_icons', {})
   for [name, icon] in items(special)
     let clean = substitute(name, '[^a-zA-Z0-9]', '', 'g')
-    let group = 'FTXIconSpecial' . clean
+    let group_icon = 'FTXIconSpecial' . clean
+    let group_file = 'FTXFileSpecial' . clean
     let base = fnamemodify(name, ':r')
     
     if has_key(colors, name) && !empty(colors[name])
-      execute 'highlight! ' . group . ' ' . colors[name]
+      execute 'highlight! ' . group_icon . ' ' . colors[name]
+      execute 'highlight! ' . group_file . ' ' . colors[name]
     elseif has_key(colors, base) && !empty(colors[base])
-      execute 'highlight! ' . group . ' ' . colors[base]
+      execute 'highlight! ' . group_icon . ' ' . colors[base]
+      execute 'highlight! ' . group_file . ' ' . colors[base]
     else
-      execute 'highlight default ' . group . ' ctermfg=245 guifg=#8a8a8a'
+      execute 'highlight default ' . group_icon . ' ctermfg=245 guifg=#8a8a8a'
+      execute 'highlight default ' . group_file . ' ctermfg=245 guifg=#8a8a8a'
     endif
   endfor
 endfunction
