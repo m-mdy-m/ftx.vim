@@ -14,12 +14,10 @@ jobs:
       matrix:
         os:
           - macos-latest
+          - windows-latest
           - ubuntu-latest
         version:
-          - nightly
-          - v9.1.0000
-          - v9.0.0000
-          - v8.2.5136
+          - stable
     runs-on: ${{ matrix.os }}
 
     steps:
