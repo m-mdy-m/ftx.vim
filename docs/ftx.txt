@@ -1,0 +1,545 @@
+*ftx.txt*  Fast async file tree explorer for Vim
+
+Author:  m-mdy-m
+License: MIT
+Version: 0.4.0
+
+==============================================================================
+CONTENTS                                                        *ftx-contents*
+
+    1. Introduction ........................... |ftx-introduction|
+    2. Requirements ........................... |ftx-requirements|
+    3. Usage .................................. |ftx-usage|
+    4. Commands ............................... |ftx-commands|
+    5. Mappings ............................... |ftx-mappings|
+    6. Configuration .......................... |ftx-configuration|
+    7. Git Integration ........................ |ftx-git|
+    8. Marking ................................ |ftx-marking|
+    9. Customization .......................... |ftx-customization|
+   10. FAQ .................................... |ftx-faq|
+
+==============================================================================
+1. INTRODUCTION                                             *ftx-introduction*
+
+FTX is a file tree explorer for Vim that:
+  - Renders directories asynchronously (non-blocking)
+  - Shows real-time git status indicators
+  - Supports multi-file operations
+  - Works as split window or project drawer
+  - Has no external dependencies
+
+FTX is designed to be simple, fast, and stay out of your way.
+
+==============================================================================
+2. REQUIREMENTS                                             *ftx-requirements*
+
+Minimum:
+  - Vim 8.0+ with |+job| and |+timers|
+  - OR Neovim 0.4+
+
+Optional:
+  - Git (for git features)
+  - |+popupwin| (for help popup and tooltips)
+  - Unicode-capable terminal (for icons)
+
+Check your Vim: >
+    :echo has('job') && has('timers')
+<
+Should return 1.
+
+==============================================================================
+3. USAGE                                                           *ftx-usage*
+
+Basic Usage~
+
+Open FTX in current directory: >
+    :FTX .
+<
+Open FTX in specific path: >
+    :FTX ~/projects
+<
+Open FTX on parent of current buffer: >
+    :FTX %:h
+<
+Toggle FTX: >
+    :FTXToggle
+    or press F2
+<
+Auto-open~
+
+When you run `vim .` on a directory, FTX opens automatically.
+
+Split Windows vs Drawer~
+
+By default, FTX opens as a split window (like |netrw|). You can also use it
+as a project drawer by passing `-drawer` flag: >
+    :FTX . -drawer
+<
+Drawer style:
+  - Always on left (or right with |g:ftx_position|)
+  - Fixed width
+  - Different behavior for some operations
+
+==============================================================================
+4. COMMANDS                                                     *ftx-commands*
+
+Core Commands~
+
+*:FTX* [{path}]
+    Open FTX at {path}. Defaults to current directory.
+
+*:FTXToggle*
+    Toggle FTX window. If open, close it. If closed, open it.
+
+*:FTXClose*
+    Close FTX window.
+
+*:FTXFocus*
+    Move cursor to FTX window.
+
+*:FTXRefresh*
+    Refresh tree display.
+
+*:FTXRefreshForce*
+    Force refresh (clear cache and rebuild).
+
+*:FTXClearCache*
+    Clear tree cache.
+
+Tree Commands~
+
+*:FTXToggleHidden*
+    Show or hide dotfiles (files starting with `.`).
+
+*:FTXExpandAll*
+    Expand all directories in tree.
+
+*:FTXCollapseAll*
+    Collapse all directories in tree.
+
+*:FTXGoParent*
+    Navigate to parent directory.
+
+*:FTXGoHome*
+    Navigate to home directory.
+
+Git Commands~
+
+These require |ftx-git| features enabled.
+
+*:FTXRefreshGit*
+    Refresh git status indicators.
+
+*:FTXBranchInfo*
+    Show branch information popup.
+
+*:FTXBlame*
+    Show git blame for file under cursor.
+    Requires |g:ftx_git_blame| = 1.
+
+Marking Commands~
+
+These require |ftx-marking| enabled.
+
+*:FTXMarkToggle*
+    Toggle mark on file under cursor.
+
+*:FTXMarkClear*
+    Clear all marks.
+
+*:FTXMarkedOpen*
+    Open all marked files.
+
+*:FTXMarkStageAll*
+    Stage all marked files to git.
+
+Yank Commands~
+
+*:FTXYankAbsolute*
+    Copy absolute path to clipboard.
+
+*:FTXYankRelative*
+    Copy relative path to clipboard.
+
+*:FTXYankName*
+    Copy filename only to clipboard.
+
+Other Commands~
+
+*:FTXCd*
+    Open terminal in current path.
+
+*:FTXHelp*
+    Show help with all keymaps.
+
+==============================================================================
+5. MAPPINGS                                                     *ftx-mappings*
+
+Global Mappings~
+
+These work anywhere in Vim:
+
+    <F2>            Toggle FTX
+    <F3>            Refresh FTX
+    <leader>n       Toggle FTX
+    <leader>nf      Focus FTX
+    <leader>nr      Refresh FTX
+    <leader>nh      Show help
+
+Buffer Mappings~
+
+These work inside FTX buffer:
+
+File Operations~
+    o, <Return>     Open file or toggle directory
+    t               Open in tab
+    s               Open in horizontal split
+    v               Open in vertical split
+    <2-LeftMouse>   Open with double-click
+
+Tree Operations~
+    r               Refresh tree
+    <C-r>           Force refresh
+    R               Refresh git status
+    I               Toggle hidden files
+    O               Expand all
+    C               Collapse all
+
+Navigation~
+    -               Go to parent
+    ~               Go to home
+    cd              Open terminal
+
+Git Operations~
+    gi              Show branch info
+    gb              Git blame (if enabled)
+    ig              Toggle ignored files
+
+Marking~
+    m               Toggle mark
+    M               Clear all marks
+    mo              Open all marked
+    mg              Stage all marked
+
+Yank~
+    yy              Yank absolute path
+    yr              Yank relative path
+    yn              Yank filename
+
+Other~
+    ?               Show help
+    q               Close FTX
+
+Custom Mappings~
+
+Add your own in |vimrc|: >
+    nnoremap <C-n> :FTXToggle<CR>
+<
+Inside FTX buffer: >
+    function! s:ftx_mappings() abort
+      nmap <buffer> <C-t> t
+    endfunction
+    
+    autocmd FileType ftx call s:ftx_mappings()
+<
+
+==============================================================================
+6. CONFIGURATION                                         *ftx-configuration*
+
+Window Settings~
+
+*g:ftx_width*
+    Tree window width in columns.
+    Default: 30 >
+        let g:ftx_width = 30
+<
+*g:ftx_position*
+    Window position: 'left' or 'right'.
+    Default: 'left' >
+        let g:ftx_position = 'left'
+<
+*g:ftx_show_hidden*
+    Show hidden files (dotfiles) by default.
+    Default: 0 >
+        let g:ftx_show_hidden = 0
+<
+*g:ftx_sort_dirs_first*
+    Sort directories before files.
+    Default: 1 >
+        let g:ftx_sort_dirs_first = 1
+<
+*g:ftx_auto_close*
+    Close FTX when it's the last window.
+    Default: 0 >
+        let g:ftx_auto_close = 0
+<
+*g:ftx_auto_sync*
+    Auto-sync tree to current buffer.
+    Default: 0 >
+        let g:ftx_auto_sync = 1
+<
+*g:ftx_close_on_open*
+    Close FTX after opening a file.
+    Default: 0 >
+        let g:ftx_close_on_open = 0
+<
+Feature Settings~
+
+*g:ftx_enable_icons*
+    Use icons for files and directories.
+    Default: 1 >
+        let g:ftx_enable_icons = 1
+<
+*g:ftx_enable_marks*
+    Enable multi-file marking system.
+    Default: 1 >
+        let g:ftx_enable_marks = 1
+<
+*g:ftx_enable_git*
+    Master switch for all git features.
+    Default: 1 >
+        let g:ftx_enable_git = 1
+<
+
+==============================================================================
+7. GIT INTEGRATION                                                  *ftx-git*
+
+FTX shows real-time git status indicators next to files.
+
+Status Indicators~
+
+    +       Staged (added to index)
+    *       Modified (not staged)
+    ?       Untracked (not in git)
+    -       Deleted
+    !       Conflict (merge conflict)
+    →       Renamed
+    ◌       Ignored (if shown)
+
+Configuration~
+
+*g:ftx_git_status*
+    Show git status indicators.
+    Default: 1 >
+        let g:ftx_git_status = 1
+<
+*g:ftx_git_update_time*
+    Update interval in milliseconds.
+    Default: 2000 >
+        let g:ftx_git_update_time = 2000
+<
+*g:ftx_git_blame*
+    Enable git blame feature (opt-in).
+    Default: 0 >
+        let g:ftx_git_blame = 1
+<
+*g:ftx_show_ignored*
+    Show gitignored files.
+    Default: 0 >
+        let g:ftx_show_ignored = 0
+<
+Git Icons~
+
+*g:ftx_git_icon_added*
+    Icon for staged files. Default: '+' >
+        let g:ftx_git_icon_added = '+'
+<
+*g:ftx_git_icon_modified*
+    Icon for modified files. Default: '*' >
+        let g:ftx_git_icon_modified = '*'
+<
+*g:ftx_git_icon_deleted*
+    Icon for deleted files. Default: '-' >
+        let g:ftx_git_icon_deleted = '-'
+<
+*g:ftx_git_icon_renamed*
+    Icon for renamed files. Default: '→' >
+        let g:ftx_git_icon_renamed = '→'
+<
+*g:ftx_git_icon_untracked*
+    Icon for untracked files. Default: '?' >
+        let g:ftx_git_icon_untracked = '?'
+<
+*g:ftx_git_icon_ignored*
+    Icon for ignored files. Default: '◌' >
+        let g:ftx_git_icon_ignored = '◌'
+<
+*g:ftx_git_icon_unmerged*
+    Icon for conflicts. Default: '!' >
+        let g:ftx_git_icon_unmerged = '!'
+<
+Branch Information~
+
+Press |gi| inside FTX to see:
+  - Current branch name
+  - Commits ahead of remote
+  - Commits behind of remote
+  - Whether stash exists
+
+Git Blame~
+
+Enable with |g:ftx_git_blame|, then press |gb| on a file to see last 10
+commits with author, date, and message.
+
+==============================================================================
+8. MARKING                                                        *ftx-marking*
+
+Mark multiple files for batch operations.
+
+Usage~
+
+Mark files with |m| key. Marked files show an indicator (default: ✓).
+
+Operations:
+  - |mo| - Open all marked files in tabs
+  - |mg| - Stage all marked files to git
+  - |M|  - Clear all marks
+
+Configuration~
+
+*g:ftx_icon_marked*
+    Mark indicator icon.
+    Default: '✓' >
+        let g:ftx_icon_marked = '✓'
+<
+Example Workflow~
+>
+    " Mark several files
+    m
+    m  
+    m
+    " Open all in tabs
+    mo
+<
+Or stage to git: >
+    " Mark modified files
+    m
+    m
+    " Stage them
+    mg
+<
+==============================================================================
+9. CUSTOMIZATION                                         *ftx-customization*
+
+Icons~
+
+Tree Icons~
+
+*g:ftx_icon_expanded*
+    Expanded directory. Default: '▾' >
+        let g:ftx_icon_expanded = '▾'
+<
+*g:ftx_icon_collapsed*
+    Collapsed directory. Default: '▸' >
+        let g:ftx_icon_collapsed = '▸'
+<
+*g:ftx_icon_file*
+    Regular file. Default: '' >
+        let g:ftx_icon_file = ''
+<
+*g:ftx_icon_symlink*
+    Symbolic link. Default: '→' >
+        let g:ftx_icon_symlink = '→'
+<
+File Type Icons~
+
+*g:ftx_icons*
+    Custom icons by extension: >
+        let g:ftx_icons = {
+              \ 'vim': '',
+              \ 'md': '',
+              \ 'js': '',
+              \ }
+<
+*g:ftx_special_icons*
+    Icons for specific filenames: >
+        let g:ftx_special_icons = {
+              \ 'README': '',
+              \ 'LICENSE': '',
+              \ '.gitignore': '',
+              \ }
+<
+Colors~
+
+*g:ftx_colors*
+    Custom colors by extension or filename: >
+        let g:ftx_colors = {
+              \ 'vim': 'guifg=#019733 ctermfg=35',
+              \ 'py': 'guifg=#3572A5 ctermfg=67',
+              \ }
+<
+Or override highlight groups: >
+    highlight FTXDir ctermfg=75 guifg=#5fafd7 gui=bold
+    highlight FTXFile ctermfg=252 guifg=#d0d0d0
+    highlight FTXGitModified ctermfg=221 guifg=#ffd787
+<
+Available highlight groups:
+    FTXDir              Directories
+    FTXFile             Regular files
+    FTXIconExpanded     Expanded icon
+    FTXIconCollapsed    Collapsed icon
+    FTXMark             Mark indicator
+    FTXGitAdded         Git staged
+    FTXGitModified      Git modified
+    FTXGitDeleted       Git deleted
+    FTXGitRenamed       Git renamed
+    FTXGitUntracked     Git untracked
+    FTXGitIgnored       Git ignored
+    FTXGitUnmerged      Git conflict
+
+Presets~
+
+ASCII Mode (no Unicode): >
+    let g:ftx_enable_icons = 0
+    let g:ftx_icon_expanded = 'v'
+    let g:ftx_icon_collapsed = '>'
+<
+Minimal Setup: >
+    let g:ftx_enable_git = 0
+    let g:ftx_enable_icons = 0
+    let g:ftx_enable_marks = 0
+<
+Performance Mode: >
+    let g:ftx_git_update_time = 5000
+    let g:ftx_git_blame = 0
+    let g:ftx_auto_sync = 0
+<
+
+==============================================================================
+10. FAQ                                                              *ftx-faq*
+
+Q: How do I make FTX open on left/right?
+A: Set |g:ftx_position| to 'left' or 'right'.
+
+Q: Can I change the tree width?
+A: Yes, set |g:ftx_width| to desired columns.
+
+Q: How do I disable git features?
+A: Set |g:ftx_enable_git| = 0.
+
+Q: Icons don't show properly?
+A: Install a Nerd Font or disable icons with |g:ftx_enable_icons| = 0.
+
+Q: FTX is slow in large repos?
+A: Increase |g:ftx_git_update_time| or disable git entirely.
+
+Q: How do I auto-open FTX?
+A: Run `vim .` on a directory.
+
+Q: Can I have FTX and file side by side?
+A: Yes, that's the default split window mode.
+
+Q: How do I make it like NERDTree?
+A: Use drawer mode: `:FTX . -drawer`
+
+Q: Can I customize keymaps?
+A: Yes, see |ftx-mappings| for examples.
+
+Q: Where are my marks saved?
+A: Marks are session-only, not saved to disk.
+
+Q: Git blame doesn't work?
+A: Enable it with |g:ftx_git_blame| = 1.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
