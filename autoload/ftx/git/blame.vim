@@ -1,109 +1,142 @@
+" ----------------------------------------------------------------------
 " Copyright (c) 2026 m-mdy-m
 " MIT License
-" Git blame operations
+"
+" Git blame operations with async and caching
+" ----------------------------------------------------------------------
 
-let s:blame_cache = {}
-let s:blame_job = -1
+let s:cache = {}
 
-function! ftx#git#blame#Show() abort
-  if !g:ftx_enable_git || !g:ftx_git_blame || !executable('git')
-    call ftx#utils#EchoError('Git blame is disabled or not available')
+function! ftx#git#blame#show() abort
+  if !get(g:, 'ftx_enable_git', 1) || !get(g:, 'ftx_git_blame', 0)
+    call ftx#helpers#logger#error('Git blame is disabled')
     return
   endif
   
-  let node = ftx#ui#renderer#GetNode()
+  if !executable('git')
+    call ftx#helpers#logger#error('Git not available')
+    return
+  endif
+  
+  let node = ftx#tree#ui#get_cursor_node()
   if empty(node) || node.is_dir
-    call ftx#utils#EchoError('Select a file to show blame')
+    call ftx#helpers#logger#error('Select a file for blame')
     return
   endif
   
-  call s:RunBlame(node.path)
+  call s:fetch_blame(node.path)
+        \.then({lines -> s:show_popup(lines, node.name)})
+        \.catch({err -> ftx#helpers#logger#error('Blame failed', err)})
 endfunction
 
-function! s:RunBlame(file) abort
-  if !ftx#utils#IsReadable(a:file)
-    return
+function! s:fetch_blame(file) abort
+  if has_key(s:cache, a:file)
+    return ftx#async#promise#resolve(s:cache[a:file])
   endif
   
-  let root = ftx#git#status#GetRoot()
+  let root = ftx#git#status#get_root()
   if empty(root)
-    call ftx#utils#EchoError('Not in a git repository')
-    return
+    return ftx#async#promise#reject('Not in git repository')
   endif
   
   let cmd = ['git', '-C', root, 'log', '-n', '10', '--format=%h|%an|%ar|%s', '--', a:file]
-  let s:blame_cache[a:file] = []
   
-  let s:blame_job = job_start(cmd, {
-        \ 'out_cb': {ch, msg -> s:OnOutput(a:file, msg)},
-        \ 'exit_cb': {job, status -> s:OnExit(a:file, status)},
-        \ 'err_mode': 'nl',
-        \ })
+  return ftx#async#job#run(cmd, {'cwd': root})
+        \.then({lines -> s:cache_result(a:file, lines)})
 endfunction
 
-function! s:OnOutput(file, msg) abort
-  if !has_key(s:blame_cache, a:file)
-    let s:blame_cache[a:file] = []
-  endif
-  call add(s:blame_cache[a:file], a:msg)
+function! s:cache_result(file, lines) abort
+  let s:cache[a:file] = a:lines
+  return a:lines
 endfunction
 
-function! s:OnExit(file, status) abort
-  if a:status != 0
-    call ftx#utils#EchoError('Git blame failed')
+function! s:show_popup(lines, filename) abort
+  if empty(a:lines)
+    call ftx#helpers#logger#error('No blame information')
     return
   endif
   
-  call s:ShowPopup(a:file)
-endfunction
-
-function! s:ShowPopup(file) abort
-  if !has_key(s:blame_cache, a:file) || empty(s:blame_cache[a:file])
-    call ftx#utils#EchoError('No blame information available')
-    return
-  endif
+  let formatted = s:format_blame(a:lines, a:filename)
   
-  let lines = s:FormatBlame(a:file)
-  
-  if ftx#ui#popup#IsSupported()
-    call ftx#ui#popup#Large(lines)
+  if has('popupwin')
+    call popup_create(formatted, {
+          \ 'title': ' Git Blame ',
+          \ 'pos': 'center',
+          \ 'minwidth': 60,
+          \ 'maxheight': 20,
+          \ 'border': [],
+          \ 'padding': [0, 1, 0, 1],
+          \ 'scrollbar': 1,
+          \ 'close': 'click',
+          \ 'filter': function('s:filter_blame_popup'),
+          \})
   else
-    for line in lines
+    for line in formatted
       echo line
     endfor
   endif
 endfunction
 
-function! s:FormatBlame(file) abort
-  let lines = []
-  call add(lines, '╔════════════════════════════════════════════════════════╗')
-  call add(lines, '║              Git Blame - Recent Commits                ║')
-  call add(lines, '╠════════════════════════════════════════════════════════╣')
-  call add(lines, '║                                                        ║')
+function! s:filter_blame_popup(id, key) abort
+  if a:key ==# 'q' || a:key ==# "\<Esc>" || a:key ==# ' ' || a:key ==# "\<CR>"
+    call popup_close(a:id)
+    return 1
+  elseif a:key ==# 'j' || a:key ==# "\<Down>"
+    call popup_setoptions(a:id, #{firstline: popup_getoptions(a:id).firstline + 1})
+    return 1
+  elseif a:key ==# 'k' || a:key ==# "\<Up>"
+    call popup_setoptions(a:id, #{firstline: max([1, popup_getoptions(a:id).firstline - 1])})
+    return 1
+  endif
+  return 0
+endfunction
+
+function! s:format_blame(lines, filename) abort
+  let result = [
+        \ '╔════════════════════════════════════════════════════════╗',
+        \ '║  File: ' . s:truncate(a:filename, 48) . '  ║',
+        \ '╠════════════════════════════════════════════════════════╣',
+        \]
   
-  for entry in s:blame_cache[a:file][:9]
+  for entry in a:lines[:9]
     let parts = split(entry, '|')
     if len(parts) >= 4
       let hash = parts[0]
-      let author = parts[1]
+      let author = s:truncate(parts[1], 15)
       let time = parts[2]
-      let message = parts[3]
+      let message = s:truncate(parts[3], 44)
       
-      call add(lines, '║  ' . hash . ' │ ' . ftx#utils#Truncate(author, 15) . '  ║')
-      call add(lines, '║  ' . ftx#utils#PadRight(time, 48) . '  ║')
-      call add(lines, '║  ' . ftx#utils#Truncate(message, 48) . '  ║')
-      call add(lines, '║                                                        ║')
+      call extend(result, [
+            \ '║                                                        ║',
+            \ '║  ' . hash . ' │ ' . s:pad_right(author, 15) . '  ║',
+            \ '║  ' . s:pad_right(time, 48) . '  ║',
+            \ '║  ' . s:pad_right(message, 48) . '  ║',
+            \])
     endif
   endfor
   
-  call add(lines, '╚════════════════════════════════════════════════════════╝')
+  call extend(result, [
+        \ '║                                                        ║',
+        \ '╚════════════════════════════════════════════════════════╝',
+        \ '',
+        \ 'Press q/Esc/Space/Enter to close, j/k to scroll',
+        \])
   
-  return lines
+  return result
 endfunction
 
-function! ftx#git#blame#Cleanup() abort
-  if s:blame_job != -1 && job_status(s:blame_job) ==# 'run'
-    call job_stop(s:blame_job)
+function! s:truncate(str, width) abort
+  if len(a:str) <= a:width
+    return a:str
   endif
-  let s:blame_cache = {}
+  return a:str[:a:width-4] . '...'
+endfunction
+
+function! s:pad_right(str, width) abort
+  let len = len(a:str)
+  return a:str . repeat(' ', max([0, a:width - len]))
+endfunction
+
+function! ftx#git#blame#cleanup() abort
+  let s:cache = {}
 endfunction
