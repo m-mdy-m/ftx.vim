@@ -1,0 +1,27 @@
+if &encoding ==# 'latin1'
+  set encoding=utf-8
+endif
+
+try
+  language message C
+catch
+endtry
+set helplang=en
+
+let s:assert = themis#helper('assert')
+call themis#option('recursive', 1)
+call themis#option('reporter', 'dot')
+call themis#helper('command').with(s:assert)
+let s:project_root = fnamemodify(expand('<sfile>:p'), ':h')
+call themis#log('Determined project_root: ' . s:project_root)
+execute 'set runtimepath+=' . fnameescape(s:project_root)
+execute 'set runtimepath+=' . fnameescape(getcwd())
+call themis#log('Vim version: ' . substitute(execute('version'), '^\%(\r\?\n\)*', '', ''))
+call themis#log('-----------------------------------------------------------')
+call themis#log('getcwd():        ' . getcwd())
+call themis#log('this .themisrc:  ' . expand('<sfile>:p'))
+call themis#log('&runtimepath:')
+for s:rp in split(&runtimepath, ',')
+  call themis#log('  ' . s:rp)
+endfor
+call themis#log('-----------------------------------------------------------')

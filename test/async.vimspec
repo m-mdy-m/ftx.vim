@@ -1,0 +1,13 @@
+let s:assert = themis#helper('assert')
+
+Describe 'async'
+
+  Before
+  End
+
+  After
+  End
+
+  It ""
+  End
+End
