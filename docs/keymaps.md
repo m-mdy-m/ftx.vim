@@ -1,98 +1,177 @@
 # Keymaps
 
-All keyboard shortcuts for FTX.
+All keyboard shortcuts. Hit `?` inside FTX to see actual mappings.
 
 ## Global (anywhere in Vim)
 
-| Key | Action |
-|-----|--------|
-| `F2` | Toggle FTX |
-| `F3` | Refresh FTX |
-| `<leader>n` | Toggle FTX |
-| `<leader>nf` | Focus FTX |
-| `<leader>nr` | Refresh FTX |
-| `<leader>nh` | Show help |
+| Mapping | Command | Description |
+|---------|---------|-------------|
+| `F2` | `:FTXToggle` | Toggle FTX window |
+| `F3` | `:FTXRefresh` | Refresh tree |
+| `<leader>n` | `:FTXToggle` | Toggle FTX window |
+| `<leader>nf` | `:FTXFocus` | Focus FTX window |
+| `<leader>nr` | `:FTXRefresh` | Refresh tree |
+| `<leader>nh` | `:FTXHelp` | Show help |
 
-## Inside FTX Window
-
-### Basic Operations
-
-| Key | Action |
-|-----|--------|
-| `o` or `Enter` | Open file / Toggle directory |
-| `t` | Open in new tab |
-| `s` | Open in horizontal split |
-| `v` | Open in vertical split |
-| `-` | Go to parent directory |
-| `~` | Go to home directory |
-
-### Tree Operations
-
-| Key | Action |
-|-----|--------|
-| `r` | Refresh tree |
-| `R` | Refresh git status |
-| `I` | Toggle hidden files |
-| `O` | Expand all directories |
-| `C` | Collapse all directories |
-
-### Multi-file Marking
-
-| Key | Action |
-|-----|--------|
-| `m` | Toggle mark on current item |
-| `M` | Clear all marks |
-| `mo` | Open all marked files |
-| `mg` | Stage all marked files (git) |
+## Inside FTX Buffer
 
 ### File Operations
 
-| Key | Action |
-|-----|--------|
-| `cd` | Open terminal in current path |
+| Mapping | Action | Description |
+|---------|--------|-------------|
+| `o`, `<Return>` | `open` | Open file or toggle directory |
+| `t` | `open:tab` | Open in new tab |
+| `s` | `open:split` | Open in horizontal split |
+| `v` | `open:vsplit` | Open in vertical split |
+| `<2-LeftMouse>` | `open` | Open with double-click |
+
+### Tree Operations
+
+| Mapping | Action | Description |
+|---------|--------|-------------|
+| `r` | `refresh` | Refresh tree |
+| `<C-r>` | `refresh:force` | Force refresh (clear cache) |
+| `R` | `refresh:git` | Refresh git status |
+| `I` | `toggle:hidden` | Show/hide dotfiles |
+| `O` | `expand:all` | Expand all directories |
+| `C` | `collapse:all` | Collapse all directories |
+
+### Navigation
+
+| Mapping | Action | Description |
+|---------|--------|-------------|
+| `-` | `parent` | Go to parent directory |
+| `~` | `home` | Go to home directory |
+| `cd` | `terminal` | Open terminal in path |
 
 ### Git Operations
 
-| Key | Action |
-|-----|--------|
-| `gb` | Show git blame |
-| `gi` | Show branch info |
+Only available when `g:ftx_enable_git = 1`:
+
+| Mapping | Action | Description |
+|---------|--------|-------------|
+| `gi` | `git:branch-info` | Show branch information |
+| `gb` | `git:blame` | Show git blame (if enabled) |
+| `ig` | `git:toggle-ignored` | Show/hide ignored files |
+
+### Marking Operations
+
+Only available when `g:ftx_enable_marks = 1`:
+
+| Mapping | Action | Description |
+|---------|--------|-------------|
+| `m` | `mark:toggle` | Toggle mark on current file |
+| `M` | `mark:clear` | Clear all marks |
+| `mo` | `mark:open-all` | Open all marked files |
+| `mg` | `mark:stage-all` | Stage all marked files (git) |
+
+### Yank Operations
+
+| Mapping | Action | Description |
+|---------|--------|-------------|
+| `yy` | `yank:absolute` | Copy absolute path |
+| `yr` | `yank:relative` | Copy relative path |
+| `yn` | `yank:name` | Copy filename only |
 
 ### Other
 
-| Key | Action |
-|-----|--------|
-| `?` | Show help popup |
-| `q` | Close FTX |
+| Mapping | Action | Description |
+|---------|--------|-------------|
+| `?` | `help` | Show this help |
+| `q` | `quit` | Close FTX |
+
+## Commands
+
+All commands available from command line:
+
+### Core
+```vim
+:FTX [path]              " Open FTX at path
+:FTXToggle               " Toggle FTX
+:FTXClose                " Close FTX
+:FTXFocus                " Focus FTX window
+:FTXRefresh              " Refresh tree
+:FTXRefreshForce         " Force refresh
+:FTXClearCache           " Clear tree cache
+```
+
+### Tree
+```vim
+:FTXToggleHidden         " Toggle hidden files
+:FTXExpandAll            " Expand all directories
+:FTXCollapseAll          " Collapse all directories
+:FTXGoParent             " Go to parent directory
+:FTXGoHome               " Go to home directory
+```
+
+### Git
+```vim
+:FTXRefreshGit           " Refresh git status
+:FTXBranchInfo           " Show branch information
+:FTXBlame                " Show git blame (if enabled)
+```
+
+### Marks
+```vim
+:FTXMarkToggle           " Toggle mark
+:FTXMarkClear            " Clear all marks
+:FTXMarkedOpen           " Open all marked files
+:FTXMarkStageAll         " Stage all marked (git)
+```
+
+### Yank
+```vim
+:FTXYankAbsolute         " Yank absolute path
+:FTXYankRelative         " Yank relative path
+:FTXYankName             " Yank filename
+```
+
+### Other
+```vim
+:FTXCd                   " Open terminal
+:FTXHelp                 " Show help
+```
 
 ## Custom Mappings
 
-Add your own shortcuts in `.vimrc`:
+Add your own in `.vimrc`:
 
 ```vim
 " Quick toggle
 nnoremap <C-n> :FTXToggle<CR>
 
-" Custom leader mappings
+" Custom leaders
 nnoremap <leader>ft :FTXToggle<CR>
 nnoremap <leader>ff :FTXFocus<CR>
-nnoremap <leader>fb :FTXBranchInfo<CR>
 nnoremap <leader>fm :FTXMarkToggle<CR>
+
+" Inside FTX buffer
+function! s:ftx_mappings() abort
+  nmap <buffer> <C-t> <Plug>(ftx-open:tab)
+  nmap <buffer> <C-s> <Plug>(ftx-open:split)
+endfunction
+
+augroup ftx_custom
+  autocmd!
+  autocmd FileType ftx call s:ftx_mappings()
+augroup END
 ```
 
-## Inside Help Popup
+## Help Popup
+
+Inside help popup (press `?`):
 
 | Key | Action |
 |-----|--------|
-| `j` or `Down` | Scroll down |
-| `k` or `Up` | Scroll up |
+| `j`, `<Down>` | Scroll down |
+| `k`, `<Up>` | Scroll up |
 | `g` | Go to top |
 | `G` | Go to bottom |
-| Any other key | Close help |
+| Any other | Close help |
 
 ## Tips
 
-- Use `?` for quick reference inside FTX
-- Mouse clicks work for opening files
-- All keymaps work in normal mode only
-- Commands available from command line (`:FTX...`)
+- All mappings work in normal mode only
+- Mouse clicks work if `set mouse=a`
+- Use `:verbose map <key>` to debug conflicts
+- Press `?` inside FTX for quick reference
