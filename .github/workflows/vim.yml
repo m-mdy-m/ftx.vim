@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
   pull_request:
   workflow_dispatch:
 
@@ -23,27 +22,26 @@ jobs:
           - v9.0.0000
           - v8.2.5136
     runs-on: ${{ matrix.os }}
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Vim
-        uses: rhysd/action-setup-vim@v1
+      - uses: actions/checkout@v4
+
+      - uses: rhysd/action-setup-vim@v1
         id: vim
         with:
-          version: ${{ matrix.version }}
-      
+          version: "${{ matrix.version }}"
+
       - name: Verify Vim features
         run: |
           ${{ steps.vim.outputs.executable }} --version
-          ${{ steps.vim.outputs.executable }} -u NONE -c 'echo has("job") && has("timers") && has("popupwin")' -c 'quit' 2>&1 | grep '^1$' || exit 1
-      
-      - name: Test FTX commands
-        env:
-          VIM: ${{ steps.vim.outputs.executable }}
+          ${{ steps.vim.outputs.executable }} -u NONE \
+            -c 'if !(has("job") && has("timers") && has("popupwin")) | cquit 1 | endif' \
+            -c 'quit'
+
+      - name: Load plugin and test command
         run: |
           ${{ steps.vim.outputs.executable }} -u NONE \
-            -c "set runtimepath+=~/.vim/pack/ftx/start/ftx" \
+            -c "set rtp+=." \
             -c "runtime plugin/ftx.vim" \
-            -c "if exists(':FTX') | echo 'OK' | else | cquit 1 | endif" \
+            -c "if exists(':FTX') | echo 'FTX OK' | else | cquit 1 | endif" \
             -c "quit"

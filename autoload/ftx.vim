@@ -1,165 +1,161 @@
+" ----------------------------------------------------------------------
 " Copyright (c) 2026 m-mdy-m
 " MIT License
-" Main FTX entry point
+" ----------------------------------------------------------------------
 
-let s:root = ''
-let s:last_sync_buf = -1
+let s:renderer = {}
 
-function! ftx#Open(...) abort
+function! ftx#open(...) abort
   let path = a:0 > 0 ? fnamemodify(a:1, ':p') : getcwd()
   
-  if !ftx#utils#IsDirectory(path)
-    call ftx#utils#EchoError('Not a directory: ' . path)
+  if !isdirectory(path)
+    call ftx#helpers#logger#error('Not a directory', path)
     return
   endif
   
-  let s:root = path
+  call ftx#tree#tree#set_root(path)
   
-  if ftx#IsOpen()
-    call ftx#Focus()
-    call ftx#Refresh()
+  if ftx#is_open()
+    call ftx#focus()
+    call ftx#refresh()
     return
   endif
   
-  call s:CreateWindow()
-  call ftx#Refresh()
-  
-  if g:ftx_enable_git
-    call ftx#git#status#Update(s:root)
-  endif
+  call s:create_window()
+  call ftx#refresh()
 endfunction
 
-function! ftx#Toggle() abort
-  if ftx#IsOpen()
-    call ftx#Close()
+function! ftx#toggle() abort
+  if ftx#is_open()
+    call ftx#close()
   else
-    call ftx#Open()
+    call ftx#open()
   endif
 endfunction
 
-function! ftx#Close() abort
-  if !ftx#IsOpen()
+function! ftx#close() abort
+  if !ftx#is_open()
     return
   endif
   
-  call ftx#core#window#Close()
+  call ftx#internal#window#close()
+  call ftx#tree#ui#clear()
 endfunction
 
-function! ftx#Refresh() abort
-  if !ftx#IsOpen()
+function! ftx#refresh() abort
+  if !ftx#is_open()
     return
   endif
   
-  call ftx#ui#renderer#Render(s:root)
-  call ftx#UpdateStatusLine()
+  let root = ftx#tree#tree#get_root()
+  let cursor_pos = ftx#tree#ui#save_cursor()
+  
+  call ftx#tree#tree#build(root, 0)
+        \.then({nodes -> s:expand_marked_nodes(nodes)})
+        \.then({nodes -> ftx#tree#tree#flatten(nodes)})
+        \.then({flat -> s:render_nodes(flat)})
+        \.then({lines -> s:display_lines(lines)})
+        \.then({_ -> ftx#tree#ui#restore_cursor(cursor_pos)})
+        \.catch({err -> ftx#helpers#logger#error('Refresh failed', err)})
 endfunction
 
-function! ftx#Focus() abort
-  if !ftx#IsOpen()
+function! s:expand_marked_nodes(nodes) abort
+  let promises = []
+  for node in a:nodes
+    if node.is_dir && ftx#tree#tree#is_expanded(node.path)
+      call add(promises, ftx#tree#tree#expand_node(node))
+    endif
+  endfor
+  if empty(promises)
+    return ftx#async#promise#resolve(a:nodes)
+  endif
+  return ftx#async#promise#all(promises)
+        \.then({_ -> a:nodes})
+endfunction
+
+function! s:render_nodes(nodes) abort
+  call ftx#tree#ui#set_nodes(a:nodes)
+  
+  if empty(s:renderer)
+    let s:renderer = ftx#renderer#default#new()
+  endif
+  
+  return s:renderer.render(a:nodes)
+endfunction
+
+function! s:display_lines(lines) abort
+  let bufnr = ftx#internal#buffer#get()
+  
+  if bufnr == -1
+    return ftx#async#promise#reject('Buffer not found')
+  endif
+  
+  call ftx#internal#replacer#replace(bufnr, a:lines)
+  return ftx#async#promise#resolve(a:lines)
+endfunction
+
+function! ftx#focus() abort
+  if !ftx#is_open()
     return
   endif
   
-  call ftx#core#window#Focus()
+  call ftx#internal#window#focus()
 endfunction
 
-function! ftx#IsOpen() abort
-  return ftx#core#buffer#Exists() && ftx#core#buffer#IsVisible()
+function! ftx#is_open() abort
+  return ftx#internal#buffer#exists() && ftx#internal#buffer#is_visible()
 endfunction
 
-function! ftx#GetRoot() abort
-  return s:root
+function! s:create_window() abort
+  call ftx#internal#window#create()
+  call s:setup_buffer()
+  call ftx#mapping#init#setup()
+  call s:setup_autocmds()
+  call s:setup_syntax()
 endfunction
 
-function! ftx#GetBufnr() abort
-  return ftx#core#buffer#Get()
+function! s:setup_buffer() abort
+  setlocal buftype=nofile
+  setlocal bufhidden=hide
+  setlocal noswapfile
+  setlocal nobuflisted
+  setlocal nowrap
+  setlocal nonumber
+  setlocal norelativenumber
+  setlocal signcolumn=no
+  setlocal foldcolumn=0
+  setlocal nomodeline
+  setlocal nofoldenable
+  setlocal cursorline
+  setlocal filetype=ftx
+  setlocal nomodifiable
 endfunction
 
-function! ftx#UpdateStatusLine() abort
-  call ftx#core#statusline#Update(s:root)
+function! s:setup_autocmds() abort
+  augroup ftx_buffer_local
+    autocmd! * <buffer>
+    autocmd BufEnter <buffer> call s:on_buf_enter()
+  augroup END
 endfunction
 
-function! ftx#AutoClose() abort
-  if !g:ftx_auto_close || !ftx#IsOpen()
-    return
-  endif
-  
-  if ftx#core#window#IsLast() && ftx#core#window#IsFTXWindow()
-    quit
-  endif
-endfunction
-
-function! ftx#AutoSync() abort
-  if !g:ftx_auto_sync || !ftx#IsOpen()
-    return
-  endif
-  
-  let current_buf = bufnr('%')
-  
-  if current_buf == s:last_sync_buf || current_buf == ftx#GetBufnr()
-    return
-  endif
-  
-  let s:last_sync_buf = current_buf
-  
-  let file = expand('%:p')
-  if empty(file) || !ftx#utils#IsReadable(file)
-    return
-  endif
-  
-  let file_dir = ftx#utils#GetParentDir(file)
-  if file_dir =~# '^' . escape(s:root, '\')
-    call ftx#ui#renderer#SyncToFile(file)
+function! s:on_buf_enter() abort
+  if get(g:, 'ftx_auto_sync', 1)
+    call ftx#mapping#tree#sync_to_current()
   endif
 endfunction
 
-function! ftx#Cleanup() abort
-  call ftx#git#status#Cleanup()
-  call ftx#git#branch#Cleanup()
-  call ftx#git#blame#Cleanup()
-  call ftx#features#marks#Clear()
+function! s:setup_syntax() abort
+  if empty(s:renderer)
+    let s:renderer = ftx#renderer#default#new()
+  endif
+  
+  call s:renderer.syntax()
+  call s:renderer.highlight()
 endfunction
 
-function! s:CreateWindow() abort
-  call ftx#core#window#Create()
-  call s:SetupMappings()
-endfunction
-
-function! s:SetupMappings() abort
-  " Basic operations
-  nnoremap <buffer> <silent> o  <Cmd>call ftx#actions#Open('edit')<CR>
-  nnoremap <buffer> <silent> <CR> <Cmd>call ftx#actions#Open('edit')<CR>
-  nnoremap <buffer> <silent> t  <Cmd>call ftx#actions#Open('tabedit')<CR>
-  nnoremap <buffer> <silent> s  <Cmd>call ftx#actions#Open('split')<CR>
-  nnoremap <buffer> <silent> v  <Cmd>call ftx#actions#Open('vsplit')<CR>
-  nnoremap <buffer> <silent> <2-LeftMouse> <Cmd>call ftx#actions#Open('edit')<CR>
-  
-  " Navigation
-  nnoremap <buffer> <silent> - :call ftx#actions#GoUp()<CR>
-  nnoremap <buffer> <silent> ~ :call ftx#actions#GoHome()<CR>
-  
-  " Refresh & toggles
-  nnoremap <buffer> <silent> r :call ftx#Refresh()<CR>
-  nnoremap <buffer> <silent> R :call ftx#actions#RefreshGit()<CR>
-  nnoremap <buffer> <silent> I :call ftx#actions#ToggleHidden()<CR>
-  
-  " Tree operations
-  nnoremap <buffer> <silent> O :call ftx#ui#renderer#ExpandAll() \| call ftx#Refresh()<CR>
-  nnoremap <buffer> <silent> C :call ftx#ui#renderer#CollapseAll() \| call ftx#Refresh()<CR>
-  
-  " Mark operations
-  nnoremap <buffer> <silent> m :call ftx#features#marks#Toggle()<CR>
-  nnoremap <buffer> <silent> M :call ftx#features#marks#Clear()<CR>
-  nnoremap <buffer> <silent> mo :call ftx#features#marks#OpenAll()<CR>
-  nnoremap <buffer> <silent> mg :call ftx#features#marks#StageAll()<CR>
-  
-  " File operations
-  nnoremap <buffer> <silent> cd :call ftx#features#terminal#Open()<CR>
-  
-  " Git operations
-  nnoremap <buffer> <silent> gb :call ftx#git#blame#Show()<CR>
-  nnoremap <buffer> <silent> gi :call ftx#git#branch#ShowInfo()<CR>
-  
-  " Help & close
-  nnoremap <buffer> <silent> ? :call ftx#features#help#Show()<CR>
-  nnoremap <buffer> <silent> q :call ftx#Close()<CR>
+function! ftx#cleanup() abort
+  call ftx#tree#tree#clear()
+  call ftx#tree#marks#clear()
+  call ftx#tree#ui#clear()
+  call ftx#tree#cache#clear()
 endfunction
