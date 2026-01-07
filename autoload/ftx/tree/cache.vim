@@ -125,7 +125,14 @@ function! ftx#tree#cache#check_changed(path) abort
     return 1
   endif
   
-  let old_hash = s:hash_cache[a:path].hash
+  let cached = s:hash_cache[a:path]
+  let current_mtime = getftime(a:path)
+  
+  if cached.mtime == current_mtime
+    return 0
+  endif
+  
+  let old_hash = cached.hash
   let new_hash = ftx#tree#cache#compute_hash(a:path)
   
   return old_hash != new_hash

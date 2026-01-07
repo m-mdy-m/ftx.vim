@@ -155,7 +155,7 @@ function! s:finalize(cache) abort
   let s:state.cache = a:cache
   
   if ftx#is_open()
-    call ftx#refresh()
+    call ftx#refresh({'force': 0})
   endif
   
   return a:cache

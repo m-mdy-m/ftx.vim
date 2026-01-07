@@ -25,7 +25,8 @@ function! s:setup_file_operations() abort
 endfunction
 
 function! s:setup_tree_operations() abort
-  nnoremap <buffer> <silent> r :<C-u>call ftx#mapping#tree#refresh()<CR>
+  nnoremap <buffer> <silent> r :<C-u>call ftx#refresh()<CR>
+  nnoremap <buffer> <silent> <C-r> :<C-u>call ftx#refresh({'force': 1})<CR>
   nnoremap <buffer> <silent> I :<C-u>call ftx#mapping#tree#toggle_hidden()<CR>
   nnoremap <buffer> <silent> O :<C-u>call ftx#mapping#tree#expand_all()<CR>
   nnoremap <buffer> <silent> C :<C-u>call ftx#mapping#tree#collapse_all()<CR>
@@ -33,7 +34,7 @@ function! s:setup_tree_operations() abort
   if get(g:, 'ftx_enable_git', 1)
     nnoremap <buffer> <silent> R :<C-u>call ftx#git#status#refresh()<CR>
   else
-    nnoremap <buffer> <silent> R :<C-u>call ftx#mapping#tree#refresh()<CR>
+    nnoremap <buffer> <silent> R :<C-u>call ftx#refresh()<CR>
   endif
 endfunction
 

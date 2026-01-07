@@ -5,12 +5,22 @@
 
 let s:state = {'expanded': {}, 'root': ''}
 
-function! ftx#tree#tree#build(root, depth) abort
+function! ftx#tree#tree#build(root, depth, ...) abort
+  let opts = extend({
+        \ 'max_depth': 100,
+        \ 'lazy': 0,
+        \}, a:0 ? a:1 : {})
+  
+  if opts.lazy && a:depth > opts.max_depth
+    return ftx#async#promise#resolve([])
+  endif
+  
   let cached = ftx#tree#cache#get(a:root)
   
   if cached isnot v:null && !ftx#tree#cache#check_changed(a:root)
     return ftx#async#promise#resolve(cached)
   endif
+  
   return ftx#async#fs#readdir(a:root)
         \.then({entries -> s:process_entries(a:root, entries, a:depth)})
         \.then({nodes -> s:cache_nodes(a:root, nodes)})
@@ -26,6 +36,7 @@ function! s:process_entries(root, entries, depth) abort
   let filtered = ftx#tree#filter#apply(a:entries, [
         \ ftx#tree#filter#hidden()
         \])
+  
   let sorted = s:sort_entries(filtered)
   let nodes = []
   
