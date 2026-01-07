@@ -2,10 +2,10 @@
 
 Fast async file browser for Vim with git integration.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Vim](https://img.shields.io/badge/vim-8.0%2B-green.svg)
-![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)
-
+![Support Vim 8.2 or above](https://img.shields.io/badge/support-Vim%208.2%2B-yellowgreen.svg)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](CHANGELOG.md)
+[![Vim Tests](https://github.com/m-mdy-m/ftx.vim/actions/workflows/vim.yml/badge.svg)](https://github.com/m-mdy-m/ftx.vim/actions/workflows/vim.yml)
 
 ![FTX Screenshot](screenshot/tree.png)
 
