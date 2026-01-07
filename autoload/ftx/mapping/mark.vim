@@ -140,6 +140,7 @@ function! s:stage_files_async(files) abort
   
   return ftx#async#promise#all(promises)
         \.then({_ -> len(a:files)})
+        \.catch({err -> ftx#helpers#logger#error('Stage failed for some files', err)})
 endfunction
 
 function! s:on_stage_complete(count) abort
