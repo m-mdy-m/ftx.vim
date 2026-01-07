@@ -98,7 +98,8 @@ function! ftx#mapping#tree#show_help() abort
         \ '  v        - Open in vsplit',
         \ '',
         \ 'Tree Operations:',
-        \ '  r, R     - Refresh tree',
+        \ '  r        - Refresh tree',
+        \ '  R        - Refresh git status',
         \ '  I        - Toggle hidden files',
         \ '  O        - Expand all',
         \ '  C        - Collapse all',
@@ -108,12 +109,37 @@ function! ftx#mapping#tree#show_help() abort
         \ '  ~        - Go to home',
         \ '  cd       - Open terminal here',
         \ '',
-        \ 'Marks:',
-        \ '  m        - Toggle mark',
-        \ '  M        - Clear marks',
-        \ '  mo       - Open marked',
-        \ '  mg       - Stage marked (git)',
-        \ '',
+        \]
+  
+  if get(g:, 'ftx_enable_git', 1)
+    call extend(lines, [
+          \ 'Git Operations:',
+          \ '  gi       - Branch info',
+          \])
+    
+    if get(g:, 'ftx_git_blame', 0)
+      call add(lines, '  gb       - Git blame')
+    endif
+    
+    call add(lines, '')
+  endif
+  
+  if get(g:, 'ftx_enable_marks', 1)
+    call extend(lines, [
+          \ 'Marks:',
+          \ '  m        - Toggle mark',
+          \ '  M        - Clear marks',
+          \ '  mo       - Open marked',
+          \])
+    
+    if get(g:, 'ftx_enable_git', 1)
+      call add(lines, '  mg       - Stage marked (git)')
+    endif
+    
+    call add(lines, '')
+  endif
+  
+  call extend(lines, [
         \ 'Yank:',
         \ '  yy       - Yank absolute path',
         \ '  yr       - Yank relative path',
@@ -122,7 +148,7 @@ function! ftx#mapping#tree#show_help() abort
         \ 'Other:',
         \ '  q        - Quit',
         \ '  ?        - Show this help',
-        \]
+        \])
   
   echo join(lines, "\n")
 endfunction

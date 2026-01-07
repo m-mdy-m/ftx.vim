@@ -30,10 +30,10 @@ function! ftx#mapping#mark#toggle() abort
 endfunction
 
 function! ftx#mapping#mark#clear() abort
-  let count = ftx#tree#marks#count()
+  let num = ftx#tree#marks#count()
   call ftx#tree#marks#clear()
   call ftx#refresh()
-  call ftx#helpers#logger#info('Cleared ' . count . ' marks')
+  call ftx#helpers#logger#info('Cleared ' . num . ' marks')
 endfunction
 
 function! ftx#mapping#mark#open_all() abort

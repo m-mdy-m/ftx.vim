@@ -22,7 +22,10 @@ function! ftx#open(...) abort
   endif
   
   call s:create_window()
-  call ftx#refresh()
+  
+  call ftx#git#status#init(path)
+        \.then({_ -> ftx#refresh()})
+        \.catch({err -> ftx#refresh()})
 endfunction
 
 function! ftx#toggle() abort
@@ -112,6 +115,7 @@ function! s:create_window() abort
   call ftx#mapping#init#setup()
   call s:setup_autocmds()
   call s:setup_syntax()
+  call ftx#internal#drawer#init()
 endfunction
 
 function! s:setup_buffer() abort

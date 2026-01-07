@@ -63,11 +63,8 @@ function! ftx#tree#cache#get(path) abort
   let key = printf('%s:%s', a:path, hash)
   
   if has_key(s:cache, key)
-    call ftx#helpers#logger#debug('cache hit', a:path)
     return s:cache[key]
   endif
-  
-  call ftx#helpers#logger#debug('cache miss', a:path)
   return v:null
 endfunction
 

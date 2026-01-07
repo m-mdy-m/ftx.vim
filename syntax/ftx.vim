@@ -9,22 +9,19 @@ endif
 
 let b:current_syntax = 'ftx'
 
-syntax clear
-
-function! s:syntax() abort
+function! s:setup_syntax() abort
   let renderer = ftx#renderer#default#new()
   call renderer.syntax()
+  call renderer.highlight()
 endfunction
 
-function! s:highlight() abort
+function! s:refresh_highlights() abort
   let renderer = ftx#renderer#default#new()
   call renderer.highlight()
 endfunction
 
-augroup ftx_syntax_internal
+call s:setup_syntax()
+augroup ftx_syntax
   autocmd! * <buffer>
-  autocmd ColorScheme <buffer> call s:highlight()
+  autocmd ColorScheme <buffer> call s:refresh_highlights()
 augroup END
-
-call s:highlight()
-call s:syntax()
