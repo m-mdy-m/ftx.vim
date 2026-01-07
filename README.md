@@ -1,134 +1,108 @@
 # FTX - File Tree eXplorer
 
-Fast async file browser for Vim with git integration.
-
-![Support Vim 8.2 or above](https://img.shields.io/badge/support-Vim%208.2%2B-yellowgreen.svg)
+![Support Vim 8.0 or above](https://img.shields.io/badge/support-Vim%208.0%2B-yellowgreen.svg)
+![Support Neovim 0.4 or above](https://img.shields.io/badge/support-Neovim%200.4%2B-yellowgreen.svg)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](CHANGELOG.md)
+[![Doc](https://img.shields.io/badge/doc-%3Ah%20ftx-orange.svg)](doc/ftx.txt)
 [![Vim Tests](https://github.com/m-mdy-m/ftx.vim/actions/workflows/vim.yml/badge.svg)](https://github.com/m-mdy-m/ftx.vim/actions/workflows/vim.yml)
 
-![FTX Screenshot](screenshot/tree.png)
+<p align="center">
+<img src="screenshot/tree.png" width="800">
+</p>
 
-## What is FTX
+FTX is an asynchronous file tree explorer written in pure Vim script.
 
-Clean tree view of your project files with real-time git status indicators. Built for speed with async operations and minimal overhead.
-
-Key Features:
-- Async file operations (non-blocking I/O)
-- Fully customizable icons and symbols
-- Git blame and branch information
-- Multi-file marking for batch operations
-- Auto-sync with buffer changes
-- Terminal integration
-- Lazy-loading for performance
-- Auto-opens with vim .
-- NERDTree-style keybindings
-
-No dependencies. No bloat. Just a file tree that works.
+---
 
 ## Features
 
-Core:
-- Async file tree rendering using Vim's job API
-- Auto-sync tree when switching buffers
-- Expand/Collapse all directories
-- Show/hide hidden files
-- Customizable icons for everything
-- Mouse support
-
-Git Integration:
-- Real-time status indicators (+ * ? - !)
-- Branch information with ahead/behind commits
-- Git blame support (opt-in)
-- Branch info tooltips/floats
-- Stash detection
-- Show/hide gitignore files
-- Auto-update on file save
-
-Multi-file Operations:
-- Mark multiple files
-- Open all marked files in tabs
-- Stage all marked files to git
-- Visual mark indicators
-
-File Operations:
-- Open terminal in file/directory path
-- Open in splits, tabs, or current window
-
-Help:
-- Interactive help float showing all keymaps
-- Press ? inside FTX or :FTXHelp
-
-## Requirements
-
-Minimum:
-- Vim 8.0 or later with +job and +timers
-- git (optional, for git integration)
-
-Recommended:
-- Vim with +popupwin (for tooltips and help)
-- Unicode-capable terminal (for fancy icons)
-
-Check if your Vim supports required features:
-
-    :echo has('job') && has('timers')
+- Supports both Vim and Neovim without external dependencies
+- Asynchronous operations to keep Vim responsive
+- Real-time git status integration
+- Multi-file operations with marking system
+- Simple and straightforward
 
 ## Installation
 
+FTX has no dependencies. Use your favorite plugin manager:
+
 ### vim-plug
+```vim
+Plug 'm-mdy-m/ftx.vim'
+```
 
-    Plug 'm-mdy-m/ftx.vim'
+### dein.vim
+```vim
+call dein#add('m-mdy-m/ftx.vim')
+```
 
-Then run:
-
-    :PlugInstall
+### minpac
+```vim
+call minpac#add('m-mdy-m/ftx.vim')
+```
 
 ### Vim 8 packages
+```bash
+git clone https://github.com/m-mdy-m/ftx.vim ~/.vim/pack/ftx/start/ftx
+```
 
-    git clone https://github.com/m-mdy-m/ftx.vim ~/.vim/pack/ftx/start/ftx
+### Neovim packages
+```bash
+git clone https://github.com/m-mdy-m/ftx.vim ~/.config/nvim/pack/ftx/start/ftx
+```
 
-### Manual
+## Usage
 
-    git clone https://github.com/m-mdy-m/ftx.vim
-    cd ftx.vim
-    make install
+Open FTX on current directory:
+```vim
+:FTX .
+```
 
-## Quick Start
+Open FTX on parent of current buffer:
+```vim
+:FTX %:h
+```
 
-Basic Usage:
+Open as project drawer:
+```vim
+:FTX . -drawer
+```
 
-    :FTX            Open tree in current directory
-    :FTXToggle      Toggle tree visibility
-    F2              Toggle FTX (quick key)
-    F3              Refresh tree
-    ?               Show help inside FTX
+Toggle FTX:
+```vim
+:FTXToggle
+```
 
-Open with Directory:
+Or just:
+```bash
+vim .
+```
 
-    vim .           FTX opens automatically
-    vim ~/projects  Opens FTX in ~/projects
+FTX opens automatically when you run Vim on a directory.
 
 ## Documentation
 
-Detailed Documentation:
-- [Complete Guide](docs/README.md) - Start here
-- [Configuration](docs/configuration.md) - All settings
-- [Keymaps](docs/keymaps.md) - Keyboard shortcuts
-- [Git Integration](docs/git.md) - Git features
-- [Multi-file Marking](docs/marks.md) - Batch operations
-- [Customization](docs/customization.md) - Icons and styling
+- [Complete Guide](docs/README.md)
+- [Configuration](docs/config.md)
+- [Keymaps](docs/keymaps.md)
+- [Git Integration](docs/git.md)
+- `:help ftx` - Vim help
+
+## Requirements
+
+- Vim 8.0+
+- OR Neovim 0.4+
 
 ## Contributing
 
-Contributions welcome. Keep changes focused and include tests for new features.
+Contributions welcome. Keep changes focused and add tests for new features.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT License - Copyright (c) 2026 m-mdy-m
-
-See [LICENSE](LICENSE) for full text.
+See [LICENSE](LICENSE).
 
 ## Credits
 
