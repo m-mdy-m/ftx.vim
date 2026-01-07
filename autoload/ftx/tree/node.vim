@@ -14,11 +14,8 @@ function! ftx#tree#node#create(path, depth) abort
         \ 'is_dir': is_dir,
         \ 'is_expanded': 0,
         \ 'is_link': getftype(a:path) ==# 'link',
+        \ 'git_status': '',
         \}
-  
-  if get(g:, 'ftx_enable_git', 1)
-    let node.git_status = ''
-  endif
   
   return node
 endfunction
