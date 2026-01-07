@@ -33,12 +33,15 @@ let g:ftx_enable_icons = get(g:, 'ftx_enable_icons', 1)
 let g:ftx_icon_root = get(g:, 'ftx_icon_root', '')
 let g:ftx_icon_expanded = get(g:, 'ftx_icon_expanded', '▾')
 let g:ftx_icon_collapsed = get(g:, 'ftx_icon_collapsed', '▸')
-let g:ftx_icon_file = get(g:, 'ftx_icon_file', ' ')
+let g:ftx_icon_file = get(g:, 'ftx_icon_file', '')
 let g:ftx_icon_symlink = get(g:, 'ftx_icon_symlink', '→')
 let g:ftx_enable_marks = get(g:, 'ftx_enable_marks', 1)
 let g:ftx_icon_marked = get(g:, 'ftx_icon_marked', '✓')
 let g:ftx_enable_git = get(g:, 'ftx_enable_git', 1)
 let g:ftx_git_status = get(g:, 'ftx_git_status', 1)
+let g:ftx_git_update_time = get(g:, 'ftx_git_update_time', 1000)
+let g:ftx_git_blame = get(g:, 'ftx_git_blame', 0)
+let g:ftx_show_ignored = get(g:, 'ftx_show_ignored', 0)
 let g:ftx_git_icon_added = get(g:, 'ftx_git_icon_added', '+')
 let g:ftx_git_icon_modified = get(g:, 'ftx_git_icon_modified', '*')
 let g:ftx_git_icon_deleted = get(g:, 'ftx_git_icon_deleted', '-')
@@ -61,28 +64,28 @@ command! FTXExpandAll call ftx#mapping#tree#expand_all()
 command! FTXCollapseAll call ftx#mapping#tree#collapse_all()
 command! FTXGoParent call ftx#mapping#tree#go_parent()
 command! FTXGoHome call ftx#mapping#tree#go_home()
+if get(g:, 'ftx_enable_git', 1)
+  command! FTXRefreshGit call ftx#git#status#refresh()
+  command! FTXBranchInfo call ftx#git#branch#show_info()
+  
+  if get(g:, 'ftx_git_blame', 0)
+    command! FTXBlame call ftx#git#blame#show()
+  endif
+endif
 if get(g:, 'ftx_enable_marks', 1)
   command! FTXMarkToggle call ftx#mapping#mark#toggle()
   command! FTXMarkClear call ftx#mapping#mark#clear()
-  command! FTXMarkOpenAll call ftx#mapping#mark#open_all()
+  command! FTXMarkedOpen call ftx#mapping#mark#open_all()
   
   if get(g:, 'ftx_enable_git', 1)
     command! FTXMarkStageAll call ftx#mapping#mark#stage_all()
   endif
 endif
-
-" Yank operations
 command! FTXYankAbsolute call ftx#mapping#yank#absolute()
 command! FTXYankRelative call ftx#mapping#yank#relative()
 command! FTXYankName call ftx#mapping#yank#name()
-
-" Node operations
 command! FTXCd call ftx#mapping#node#cd()
-command! FTXReveal call ftx#mapping#node#reveal()
-
-" Help
 command! FTXHelp call ftx#mapping#tree#show_help()
-
 nnoremap <silent> <F2> :<C-u>FTXToggle<CR>
 nnoremap <silent> <F3> :<C-u>FTXRefresh<CR>
 nnoremap <silent> <leader>n :<C-u>FTXToggle<CR>
