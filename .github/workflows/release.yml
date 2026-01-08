@@ -5,6 +5,8 @@ on:
     branches: [main]
     tags:
       - 'v*.*.*'
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -12,7 +14,9 @@ permissions:
 jobs:
   build-and-release:
     name: Build and Release
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,7 +26,8 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          TAG=${GITHUB_REF#refs/tags/}
+          # از ref_name استفاده کن که خودش tag رو صاف میده
+          TAG=${{ github.ref_name }}
           VERSION=${TAG#v}
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -45,9 +50,12 @@ jobs:
         if: steps.check_release.outputs.exists == 'false'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          ARCHIVE="ftx.vim-${VERSION}.zip"
+          TAG="${{ steps.version.outputs.tag }}"
+          ARCHIVE="ftx.vim-${TAG}.tar.gz"
           
-          # Create temp directory
+          echo "Creating archive: $ARCHIVE"
+          
+          # Create temp directory structure
           mkdir -p ftx-temp/ftx.vim
           
           # Copy plugin files
@@ -57,19 +65,23 @@ jobs:
           cp -r doc ftx-temp/ftx.vim/
           cp README.md LICENSE CHANGELOG.md ftx-temp/ftx.vim/
           
-          # Create archive
+          # Create tarball
           cd ftx-temp
-          zip -r "../${ARCHIVE}" ftx.vim
+          tar -czf "../${ARCHIVE}" ftx.vim
           cd ..
           
-          # Create checksums
-          sha256sum "${ARCHIVE}" > checksums.txt
+          # Create checksum
+          sha256sum "${ARCHIVE}" > "${ARCHIVE}.sha256"
           
-          # Cleanup
+          # Also create a checksums.txt file
+          cat "${ARCHIVE}.sha256" > checksums.txt
+          
+          # Cleanup temp
           rm -rf ftx-temp
           
           echo "Created archive: ${ARCHIVE}"
           ls -lh "${ARCHIVE}"
+          cat checksums.txt
 
       - name: Extract release notes
         if: steps.check_release.outputs.exists == 'false'
@@ -78,14 +90,17 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           
           if grep -q "## \[${VERSION}\]" CHANGELOG.md; then
+            # Extract section for this version
             sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' > release_notes.md
           else
+            # Fallback if version not found in changelog
             echo "Release ${{ steps.version.outputs.tag }}" > release_notes.md
             echo "" >> release_notes.md
             echo "See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." >> release_notes.md
           fi
           
-          echo "Release notes prepared"
+          echo "Release notes prepared:"
+          cat release_notes.md
 
       - name: Create GitHub Release
         if: steps.check_release.outputs.exists == 'false'
@@ -94,7 +109,8 @@ jobs:
           name: Release ${{ steps.version.outputs.tag }}
           body_path: release_notes.md
           files: |
-            ftx.vim-*.zip
+            ftx.vim-*.tar.gz
+            ftx.vim-*.sha256
             checksums.txt
           draft: false
           prerelease: false
