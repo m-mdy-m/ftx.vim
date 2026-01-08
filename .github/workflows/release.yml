@@ -2,11 +2,8 @@ name: Release
 
 on:
   push:
-    branches: [main]
     tags:
       - 'v*.*.*'
-  pull_request:
-    branches: [main]
 
 permissions:
   contents: write
@@ -14,7 +11,6 @@ permissions:
 jobs:
   build-and-release:
     name: Build and Release
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     
     steps:
@@ -26,7 +22,6 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          # از ref_name استفاده کن که خودش tag رو صاف میده
           TAG=${{ github.ref_name }}
           VERSION=${TAG#v}
           echo "tag=$TAG" >> $GITHUB_OUTPUT
@@ -55,28 +50,20 @@ jobs:
           
           echo "Creating archive: $ARCHIVE"
           
-          # Create temp directory structure
           mkdir -p ftx-temp/ftx.vim
-          
-          # Copy plugin files
           cp -r autoload ftx-temp/ftx.vim/
           cp -r plugin ftx-temp/ftx.vim/
           cp -r syntax ftx-temp/ftx.vim/
           cp -r doc ftx-temp/ftx.vim/
           cp README.md LICENSE CHANGELOG.md ftx-temp/ftx.vim/
           
-          # Create tarball
           cd ftx-temp
           tar -czf "../${ARCHIVE}" ftx.vim
           cd ..
           
-          # Create checksum
           sha256sum "${ARCHIVE}" > "${ARCHIVE}.sha256"
-          
-          # Also create a checksums.txt file
           cat "${ARCHIVE}.sha256" > checksums.txt
           
-          # Cleanup temp
           rm -rf ftx-temp
           
           echo "Created archive: ${ARCHIVE}"
@@ -90,10 +77,8 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           
           if grep -q "## \[${VERSION}\]" CHANGELOG.md; then
-            # Extract section for this version
             sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' > release_notes.md
           else
-            # Fallback if version not found in changelog
             echo "Release ${{ steps.version.outputs.tag }}" > release_notes.md
             echo "" >> release_notes.md
             echo "See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." >> release_notes.md
