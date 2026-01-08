@@ -47,7 +47,7 @@ helptags:
 
 tag:
 	@echo "Current version: $(VERSION)"
-	@read -p "Enter new version (e.g., 0.5.0): " version; \
+	@read -p "Enter new version: " version; \
 	if [ -z "$$version" ]; then \
 		echo "Version required"; \
 		exit 1; \
@@ -60,7 +60,7 @@ tag:
 release: helptags
 	@echo "Preparing release..."
 	@echo "Current version: $(VERSION)"
-	@read -p "Enter release version (e.g., 0.5.0): " version; \
+	@read -p "Enter release version: " version; \
 	if [ -z "$$version" ]; then \
 		echo "Version required"; \
 		exit 1; \
