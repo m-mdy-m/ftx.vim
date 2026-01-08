@@ -394,3 +394,16 @@ This is a complete rewrite of FTX with new architecture and APIs.
 **Migration Notes**: This is a major rewrite. Configuration and APIs are compatible, but internal structure has completely changed.
 
 [1.0.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v1.0.0
+
+## [1.0.1] - 2026-01-08
+
+### Added
+
+* Support for `-drawer` flag in FTX command
+* Open FTX with `vim .` automatically
+
+### Fixed
+
+* FTX command argument parsing issue
+
+[1.0.1]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v1.0.1
