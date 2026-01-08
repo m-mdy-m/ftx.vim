@@ -14,6 +14,9 @@ if exists('g:loaded_ftx')
   finish
 endif
 let g:loaded_ftx = 1
+" Disable netrw
+let g:loaded_netrw = 1
+let g:loaded_netrwPlugin = 1
 
 if !has('job') && !has('nvim') || !has('timers') && !has('nvim')
   echohl ErrorMsg
@@ -57,8 +60,8 @@ let g:ftx_icons = get(g:, 'ftx_icons', {})
 let g:ftx_special_icons = get(g:, 'ftx_special_icons', {})
 let g:ftx_colors = get(g:, 'ftx_colors', {})
 " Commands
-command! -nargs=? -complete=customlist,ftx#internal#commands#ftx#complete FTX
-      \ call ftx#internal#commands#ftx#execute(<q-mods>, [<f-args>])
+command! -nargs=* -complete=customlist,ftx#internal#commands#ftx#complete FTX
+  \ call ftx#internal#commands#ftx#execute(<q-mods>, [<f-args>])
 
 command! FTXToggle call ftx#toggle()
 command! FTXClose call ftx#close()

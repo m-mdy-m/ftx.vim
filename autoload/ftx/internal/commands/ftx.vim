@@ -11,7 +11,9 @@ function! ftx#internal#commands#ftx#execute(mods, fargs) abort
     if !isdirectory(path)
       throw 'Not a directory: ' . path
     endif
-    
+    if len(a:fargs) > 1 && a:fargs[1] ==# '-drawer'
+      call ftx#internal#drawer#open({'focus': 1})
+    endif
     call ftx#open(path)
   catch
     echohl ErrorMsg
@@ -19,8 +21,4 @@ function! ftx#internal#commands#ftx#execute(mods, fargs) abort
     echohl None
     call ftx#helpers#logger#error(v:exception, v:throwpoint)
   endtry
-endfunction
-
-function! ftx#internal#commands#ftx#complete(arglead, cmdline, cursorpos) abort
-  return getcompletion(a:arglead, 'dir')
 endfunction
