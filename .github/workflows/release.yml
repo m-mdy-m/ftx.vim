@@ -2,24 +2,29 @@ name: Release
 
 on:
   push:
+    branches: [main]
     tags:
       - 'v*.*.*'
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    name: Build and Release
+  # Job 1: Build plugin package (only on tags)
+  build-package:
+    name: Build Plugin Package
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Extract version from tag
+      - name: Extract version
         id: version
         run: |
           TAG=${{ github.ref_name }}
@@ -28,82 +33,110 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version: $VERSION (tag: $TAG)"
 
-      - name: Check if release already exists
-        id: check_release
-        run: |
-          if gh release view ${{ steps.version.outputs.tag }} &>/dev/null; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Release ${{ steps.version.outputs.tag }} already exists"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Creating new release ${{ steps.version.outputs.tag }}"
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-
       - name: Create plugin archive
-        if: steps.check_release.outputs.exists == 'false'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           TAG="${{ steps.version.outputs.tag }}"
-          ARCHIVE="ftx.vim-${TAG}.tar.gz"
           
-          echo "Creating archive: $ARCHIVE"
+          echo "Creating archive for $TAG..."
           
+          # Create temp directory structure
           mkdir -p ftx-temp/ftx.vim
+          
+          # Copy plugin files
           cp -r autoload ftx-temp/ftx.vim/
           cp -r plugin ftx-temp/ftx.vim/
           cp -r syntax ftx-temp/ftx.vim/
           cp -r doc ftx-temp/ftx.vim/
           cp README.md LICENSE CHANGELOG.md ftx-temp/ftx.vim/
           
+          # Create tarball
           cd ftx-temp
-          tar -czf "../${ARCHIVE}" ftx.vim
+          tar czf "ftx-${TAG}.tar.gz" ftx.vim
           cd ..
+          mv ftx-temp/ftx-${TAG}.tar.gz ./
           
-          sha256sum "${ARCHIVE}" > "${ARCHIVE}.sha256"
-          cat "${ARCHIVE}.sha256" > checksums.txt
+          # Create checksum
+          sha256sum "ftx-${TAG}.tar.gz" > "ftx-${TAG}.tar.gz.sha256"
           
+          # Cleanup temp
           rm -rf ftx-temp
           
-          echo "Created archive: ${ARCHIVE}"
-          ls -lh "${ARCHIVE}"
+          echo "Created archive: ftx-${TAG}.tar.gz"
+          ls -lh ftx-${TAG}.tar.gz
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-package
+          path: |
+            ftx-*.tar.gz
+            ftx-*.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  # Job 2: Create GitHub Release
+  create-release:
+    name: Create Release
+    needs: build-package
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin-package
+          path: artifacts
+
+      - name: Create checksums file
+        run: |
+          cd artifacts
+          cat *.sha256 > checksums.txt
+          ls -lh
           cat checksums.txt
 
-      - name: Extract release notes
-        if: steps.check_release.outputs.exists == 'false'
-        id: notes
+      - name: Extract version
+        id: version
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          TAG=${{ github.ref_name }}
+          VERSION=${TAG#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Extract release notes
+        id: extract_notes
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
           
           if grep -q "## \[${VERSION}\]" CHANGELOG.md; then
+            # Extract section for this version
             sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' > release_notes.md
+            echo "Found release notes for version ${VERSION}"
           else
-            echo "Release ${{ steps.version.outputs.tag }}" > release_notes.md
+            # Fallback if version not found
+            echo "Release ${{ steps.version.outputs.TAG }}" > release_notes.md
             echo "" >> release_notes.md
             echo "See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." >> release_notes.md
+            echo "Warning: Version ${VERSION} not found in CHANGELOG.md"
           fi
           
-          echo "Release notes prepared:"
+          echo "Release notes:"
           cat release_notes.md
 
       - name: Create GitHub Release
-        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.TAG }}
           body_path: release_notes.md
-          files: |
-            ftx.vim-*.tar.gz
-            ftx.vim-*.sha256
-            checksums.txt
+          files: artifacts/*
           draft: false
           prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Skip existing release
-        if: steps.check_release.outputs.exists == 'true'
-        run: |
-          echo "::notice::Release ${{ steps.version.outputs.tag }} already exists, skipping."
