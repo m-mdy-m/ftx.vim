@@ -83,10 +83,10 @@ FTX opens automatically when you run Vim on a directory.
 
 ## Documentation
 
-- [Complete Guide](docs/README.md)
-- [Configuration](docs/config.md)
-- [Keymaps](docs/keymaps.md)
-- [Git Integration](docs/git.md)
+- [Complete Guide](doc/README.md)
+- [Configuration](doc/config.md)
+- [Keymaps](doc/keymaps.md)
+- [Git Integration](doc/git.md)
 - `:help ftx` - Vim help
 
 ## Requirements

@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_DATE := $(shell date -u '+%Y-%m-%d %H:%M:%S UTC')
-.PHONY: test help install clean lint
+.PHONY: test help install clean release helptags
 
 help:
 	@echo "FTX - File Tree eXplorer"
@@ -12,7 +12,8 @@ help:
 	@echo "  make clean      Clean build files"
 	@echo "  make version    Show version"
 	@echo "  make tag        Create version tag"
-	@echo "  make lint       Check code style"
+	@echo "  make helptags   Generate help tags"
+	@echo "  make release    Create release"
 
 version:
 	@echo "FTX version: $(VERSION)"
@@ -26,7 +27,7 @@ test:
 install:
 	@echo "Installing FTX..."
 	@mkdir -p ~/.vim/pack/ftx/start/ftx
-	@cp -r plugin autoload syntax docs ~/.vim/pack/ftx/start/ftx/
+	@cp -r plugin autoload syntax doc ~/.vim/pack/ftx/start/ftx/
 	@echo "FTX installed to ~/.vim/pack/ftx/start/ftx"
 	@echo ""
 	@echo "Restart Vim and run :FTX to use"
@@ -36,39 +37,43 @@ clean:
 	@find . -name "*.swp" -delete 2>/dev/null || true
 	@find . -name "*.swo" -delete 2>/dev/null || true
 	@find . -name "*~" -delete 2>/dev/null || true
+	@rm -f doc/tags
 	@echo "Clean complete"
+
+helptags:
+	@echo "Generating help tags..."
+	@vim -u NONE -c "helptags doc/" -c "quit"
+	@echo "Help tags generated"
 
 tag:
 	@echo "Current version: $(VERSION)"
-	@read -p "Enter new version (e.g., 1.0.0): " version; \
+	@read -p "Enter new version (e.g., 0.5.0): " version; \
 	if [ -z "$$version" ]; then \
 		echo "Version required"; \
 		exit 1; \
 	fi; \
+	echo "Creating tag v$$version..."; \
 	git tag -a "v$$version" -m "Release v$$version"; \
 	git push origin "v$$version"; \
 	echo "Tagged and pushed v$$version"
 
-lint:
-	@echo "Checking code style..."
-	@echo ""
-	@echo "Checking file structure..."
-	@test -f plugin/ftx.vim || (echo "Missing: plugin/ftx.vim"; exit 1)
-	@test -f autoload/ftx.vim || (echo "Missing: autoload/ftx.vim"; exit 1)
-	@test -f autoload/ftx/renderer.vim || (echo "Missing: autoload/ftx/renderer.vim"; exit 1)
-	@test -f autoload/ftx/git.vim || (echo "Missing: autoload/ftx/git.vim"; exit 1)
-	@test -f autoload/ftx/action.vim || (echo "Missing: autoload/ftx/action.vim"; exit 1)
-	@test -f autoload/ftx/style.vim || (echo "Missing: autoload/ftx/style.vim"; exit 1)
-	@test -f syntax/ftx.vim || (echo "Missing: syntax/ftx.vim"; exit 1)
-	@echo "File structure OK"
-	@echo ""
-	@echo "Checking license headers..."
-	@grep -q "Copyright (c) 2026 m-mdy-m" plugin/ftx.vim || (echo "Missing license in plugin/ftx.vim"; exit 1)
-	@grep -q "Copyright (c) 2026 m-mdy-m" autoload/ftx.vim || (echo "Missing license in autoload/ftx.vim"; exit 1)
-	@echo "License headers OK"
-	@echo ""
-	@echo "Checking function naming..."
-	@! grep -rn "^function! [a-z]" autoload/ && echo "Function naming OK" || \
-		(echo "Error: Functions must start with capital or contain :"; exit 1)
-	@echo ""
-	@echo "All checks passed"
+release: helptags
+	@echo "Preparing release..."
+	@echo "Current version: $(VERSION)"
+	@read -p "Enter release version (e.g., 0.5.0): " version; \
+	if [ -z "$$version" ]; then \
+		echo "Version required"; \
+		exit 1; \
+	fi; \
+	if git rev-parse "v$$version" >/dev/null 2>&1; then \
+		echo "Error: Tag v$$version already exists"; \
+		exit 1; \
+	fi; \
+	echo "Creating release v$$version..."; \
+	git add doc/tags; \
+	git commit -m "chore: generate help tags for v$$version" || true; \
+	git tag -a "v$$version" -m "Release v$$version"; \
+	echo ""; \
+	echo "Release ready. To publish, run:"; \
+	echo "  git push origin main"; \
+	echo "  git push origin v$$version"
