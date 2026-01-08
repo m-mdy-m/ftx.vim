@@ -195,12 +195,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 #### Documentation
   Detailed Documentation:
-  - [Complete Guide](docs/README.md) - Start here
-  - [Configuration](docs/configuration.md) - All settings
-  - [Keymaps](docs/keymaps.md) - Keyboard shortcuts
-  - [Git Integration](docs/git.md) - Git features
-  - [Multi-file Marking](docs/marks.md) - Batch operations
-  - [Customization](docs/customization.md) - Icons and styling
+  - [Complete Guide](doc/README.md) - Start here
+  - [Configuration](doc/configuration.md) - All settings
+  - [Keymaps](doc/keymaps.md) - Keyboard shortcuts
+  - [Git Integration](doc/git.md) - Git features
+  - [Multi-file Marking](doc/marks.md) - Batch operations
+  - [Customization](doc/customization.md) - Icons and styling
   
 #### Commands
 New commands added:
@@ -332,3 +332,65 @@ New configuration variables:
 
 [Released]: https://github.com/m-mdy-m/ftx.vim/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v0.4.0
+
+## [1.0.0] - 2026-01-08
+
+### ⚠️ Breaking Changes
+
+This is a complete rewrite of FTX with new architecture and APIs.
+
+### Added
+
+#### Core Architecture
+- New async engine with promise-based API (#17, #15)
+- Task queue system with worker pool
+- Channel-based inter-task communication
+- Git-like tree/blob caching system (#21)
+- Modular renderer architecture (#27)
+
+#### Features
+- **Drawer Mode**: NERDTree-style project drawer (#33)
+- **Testing Framework**: Themis test infrastructure (#35)
+- **Help System**: Complete Vim documentation (`:help ftx`) (#36)
+- **CI/CD**: Automated releases via GitHub Actions
+
+#### Platform Support
+- Full Neovim compatibility
+- Windows OS support (#31)
+- macOS and Linux testing
+- Vim 8.0+ and Neovim 0.4+
+
+### Changed
+
+#### Refactored Components
+- Tree rendering rewritten from scratch (#29)
+- Git status integration redesigned (#32, #33)
+- Command system restructured (#22)
+- Mapping system reorganized (#25)
+- Internal buffer/window management (#23, #28)
+- Helper utilities modularized (#19)
+
+### Fixed
+
+- Syntax highlighting persistence (#34)
+- Yank filepath functionality
+- Neovim-specific compatibility issues
+- Promise chain error handling (#29)
+- Git renderer color display
+
+### Documentation
+
+- Added `doc/ftx.txt` - comprehensive help file
+- Reorganized to `doc/` directory structure
+- See `:help ftx` for complete reference
+
+### Development
+
+- CI for Vim/Neovim across OS
+- Automated release workflow
+
+---
+
+**Migration Notes**: This is a major rewrite. Configuration and APIs are compatible, but internal structure has completely changed.
+
+[1.0.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v1.0.0
