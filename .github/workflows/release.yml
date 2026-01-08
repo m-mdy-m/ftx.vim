@@ -2,10 +2,11 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     tags:
-      - 'v*'
+      - 'v*.*.*'
+  pull_request:
+    branches: [main]
 permissions:
   contents: write
   packages: write
@@ -25,7 +26,7 @@ jobs:
 
       - name: Extract version
         id: extract
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Check if tag exists in releases
         id: check
