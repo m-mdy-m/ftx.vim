@@ -2,108 +2,106 @@ name: Release
 
 on:
   push:
-    branches: [main]
     tags:
       - 'v*.*.*'
-  pull_request:
-    branches: [main]
+
 permissions:
   contents: write
-  packages: write
 
 jobs:
-  check-tag:
-    name: Check Tag
+  build-and-release:
+    name: Build and Release
     runs-on: ubuntu-latest
-    outputs:
-      should_release: ${{ steps.check.outputs.should_release }}
-      version: ${{ steps.extract.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Extract version
-        id: extract
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-      - name: Check if tag exists in releases
-        id: check
+      - name: Extract version from tag
+        id: version
         run: |
-          if gh release view ${{ github.ref_name }} &>/dev/null; then
-            echo "Release already exists"
-            echo "should_release=false" >> $GITHUB_OUTPUT
+          TAG=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG#v}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION (tag: $TAG)"
+
+      - name: Check if release already exists
+        id: check_release
+        run: |
+          if gh release view ${{ steps.version.outputs.tag }} &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release ${{ steps.version.outputs.tag }} already exists"
           else
-            echo "Creating new release"
-            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Creating new release ${{ steps.version.outputs.tag }}"
           fi
         env:
           GH_TOKEN: ${{ github.token }}
 
-  build-package:
-    name: Build Plugin Package
-    needs: check-tag
-    if: needs.check-tag.outputs.should_release == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Create plugin archive
+        if: steps.check_release.outputs.exists == 'false'
         run: |
-          mkdir -p ftx.vim
-          cp -r autoload plugin syntax doc ftx.vim/
-          cp README.md LICENSE CHANGELOG.md ftx.vim/
-          zip -r ftx.vim-${{ needs.check-tag.outputs.version }}.zip ftx.vim
+          VERSION="${{ steps.version.outputs.version }}"
+          ARCHIVE="ftx.vim-${VERSION}.zip"
+          
+          # Create temp directory
+          mkdir -p ftx-temp/ftx.vim
+          
+          # Copy plugin files
+          cp -r autoload ftx-temp/ftx.vim/
+          cp -r plugin ftx-temp/ftx.vim/
+          cp -r syntax ftx-temp/ftx.vim/
+          cp -r doc ftx-temp/ftx.vim/
+          cp README.md LICENSE CHANGELOG.md ftx-temp/ftx.vim/
+          
+          # Create archive
+          cd ftx-temp
+          zip -r "../${ARCHIVE}" ftx.vim
+          cd ..
           
           # Create checksums
-          sha256sum ftx.vim-${{ needs.check-tag.outputs.version }}.zip > checksums.txt
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: plugin-package
-          path: |
-            ftx.vim-*.zip
-            checksums.txt
-
-  create-release:
-    name: Create Release
-    needs: [check-tag, build-package]
-    if: needs.check-tag.outputs.should_release == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: plugin-package
-          path: artifacts
+          sha256sum "${ARCHIVE}" > checksums.txt
+          
+          # Cleanup
+          rm -rf ftx-temp
+          
+          echo "Created archive: ${ARCHIVE}"
+          ls -lh "${ARCHIVE}"
 
       - name: Extract release notes
+        if: steps.check_release.outputs.exists == 'false'
         id: notes
         run: |
-          VERSION="${{ needs.check-tag.outputs.version }}"
+          VERSION="${{ steps.version.outputs.version }}"
           
           if grep -q "## \[${VERSION}\]" CHANGELOG.md; then
             sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' > release_notes.md
           else
-            echo "Release ${{ github.ref_name }}" > release_notes.md
+            echo "Release ${{ steps.version.outputs.tag }}" > release_notes.md
             echo "" >> release_notes.md
             echo "See [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." >> release_notes.md
           fi
+          
+          echo "Release notes prepared"
 
       - name: Create GitHub Release
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}
+          name: Release ${{ steps.version.outputs.tag }}
           body_path: release_notes.md
-          files: artifacts/*
+          files: |
+            ftx.vim-*.zip
+            checksums.txt
           draft: false
           prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip existing release
+        if: steps.check_release.outputs.exists == 'true'
+        run: |
+          echo "::notice::Release ${{ steps.version.outputs.tag }} already exists, skipping."
