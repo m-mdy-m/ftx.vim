@@ -78,6 +78,7 @@ function! s:display_tree(nodes, cursor_pos) abort
 
   return s:render_nodes(flat)
         \.then({lines -> s:display_lines(lines)})
+        \.then({_ -> s:reapply_syntax()})
         \.then({_ -> ftx#tree#ui#restore_cursor(a:cursor_pos)})
 endfunction
 
@@ -86,6 +87,7 @@ function! s:expand_and_display(nodes, cursor_pos) abort
 
   call s:render_nodes(flat)
         \.then({lines -> s:display_lines(lines)})
+        \.then({_ -> s:reapply_syntax()})
         \.then({_ -> ftx#tree#ui#restore_cursor(a:cursor_pos)})
         \.catch({err -> ftx#helpers#logger#error('Display failed', err)})
 endfunction
@@ -128,6 +130,20 @@ function! s:display_lines(lines) abort
 
   call ftx#internal#replacer#replace(bufnr, a:lines)
   return ftx#async#promise#resolve(a:lines)
+endfunction
+
+function! s:reapply_syntax() abort
+  if empty(s:renderer)
+    let s:renderer = ftx#renderer#default#new()
+  endif
+
+  let bufnr = ftx#internal#buffer#get()
+  if bufnr == -1
+    return
+  endif
+
+  call win_execute(bufwinid(bufnr), 'call s:renderer.syntax()')
+  call win_execute(bufwinid(bufnr), 'call s:renderer.highlight()')
 endfunction
 
 function! ftx#focus() abort

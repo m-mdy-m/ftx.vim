@@ -11,7 +11,9 @@ function! ftx#mapping#yank#path(type) abort
   endif
   
   let path = s:get_path(node, a:type)
-  call setreg('+', path)
+  if has('clipboard')
+    call setreg('+', path)
+  endif
   call setreg('"', path)
   
   call ftx#helpers#logger#info('Yanked: ' . path)
