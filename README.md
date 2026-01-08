@@ -5,7 +5,7 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](CHANGELOG.md)
 [![Doc](https://img.shields.io/badge/doc-%3Ah%20ftx-orange.svg)](doc/ftx.txt)
-[![Vim Tests](https://github.com/m-mdy-m/ftx.vim/actions/workflows/vim.yml/badge.svg)](https://github.com/m-mdy-m/ftx.vim/actions/workflows/vim.yml)
+[![Vim Tests](https://github.com/m-mdy-m/ftx.vim/actions/workflows/vim.yml/badge.svg)](https://github.com/m-mdy-m/ftx.vim/actions/workflows/ci.yml)
 
 <p align="center">
 <img src="screenshot/tree.png" width="800">
