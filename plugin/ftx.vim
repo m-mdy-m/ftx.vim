@@ -47,7 +47,7 @@ let g:ftx_enable_git = get(g:, 'ftx_enable_git', 1)
 let g:ftx_git_status = get(g:, 'ftx_git_status', 1)
 let g:ftx_git_update_time = get(g:, 'ftx_git_update_time', 2000)
 let g:ftx_git_blame = get(g:, 'ftx_git_blame', 0)
-let g:ftx_show_ignored = get(g:, 'ftx_show_ignored', 0)
+let g:ftx_show_ignored = get(g:, 'ftx_show_ignored', 1)
 " Git icons
 let g:ftx_git_icon_added = get(g:, 'ftx_git_icon_added', '+')
 let g:ftx_git_icon_modified = get(g:, 'ftx_git_icon_modified', '*')
