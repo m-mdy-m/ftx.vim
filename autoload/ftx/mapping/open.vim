@@ -20,41 +20,66 @@ function! ftx#mapping#open#execute(cmd) abort
     return
   endif
   
-  call s:open_file(node.path, a:cmd)
+  let origin_tab = tabpagenr()
+  let origin_win = winnr()
+  
+  call s:open_file(node.path, a:cmd, origin_tab, origin_win)
   
   if get(g:, 'ftx_close_on_open', 0)
     call ftx#close()
   endif
 endfunction
 
-function! s:open_file(path, cmd) abort
-  let target_win = s:find_target_window()
+function! s:open_file(path, cmd, origin_tab, origin_win) abort
+  let target_win = s:find_target_window_in_tab(a:origin_tab)
   
-  if target_win != -1
+  if target_win > 0
+    execute 'tabnext' a:origin_tab
     execute target_win . 'wincmd w'
   else
+    execute 'tabnext' a:origin_tab
     wincmd p
+    
+    " If still in FTX, create new window
+    if &filetype ==# 'ftx'
+      if ftx#internal#drawer#is_drawer()
+        wincmd l
+        if &filetype ==# 'ftx'
+          botright vnew
+        endif
+      else
+        wincmd p
+        if &filetype ==# 'ftx'
+          botright new
+        endif
+      endif
+    endif
   endif
   
   execute a:cmd . ' ' . fnameescape(a:path)
 endfunction
 
-function! s:find_target_window() abort
+function! s:find_target_window_in_tab(tabnr) abort
   let ftx_bufnr = ftx#internal#buffer#get()
+  let current_tab = tabpagenr()
+  execute 'tabnext' a:tabnr
   
-  for winnr in range(1, winnr('$'))
+  let target_win = 0
+  let winnr_count = winnr('$')
+  
+  for winnr in range(1, winnr_count)
     let bufnr = winbufnr(winnr)
-    
     if bufnr == ftx_bufnr
       continue
     endif
-    
     if getbufvar(bufnr, '&buftype') ==# ''
-      return winnr
+      let target_win = winnr
+      break
     endif
   endfor
+  execute 'tabnext' current_tab
   
-  return -1
+  return target_win
 endfunction
 
 function! ftx#mapping#open#in_split(vertical) abort

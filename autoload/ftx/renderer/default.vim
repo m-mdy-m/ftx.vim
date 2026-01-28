@@ -27,21 +27,23 @@ function! s:render_node(node) abort
   endif
   
   if get(g:, 'ftx_enable_icons', 1) && a:node.is_dir
-    let icon = get(a:node, 'is_expanded', 0) ? get(g:, 'ftx_icon_expanded', '▾') : get(g:, 'ftx_icon_collapsed', '▸')
+    let icon = get(a:node, 'is_expanded', 0) 
+          \ ? get(g:, 'ftx_icon_expanded', '▾') 
+          \ : get(g:, 'ftx_icon_collapsed', '▸')
     if !empty(icon)
       call add(parts, icon . ' ')
     endif
   endif
   
-  if get(g:, 'ftx_enable_marks', 1) && ftx#tree#marks#is_marked(a:node.path)
-    call add(parts, get(g:, 'ftx_icon_marked', '✓') . ' ')
-  endif
-  
   if get(g:, 'ftx_enable_git', 1)
     let status = ftx#git#status#get(a:node.path)
-    if !empty(status)
-      call add(parts, status . ' ')
+    if !empty(status) && status !~# '^  $'
+      call add(parts, printf('[%s] ', status))
     endif
+  endif
+  
+  if get(g:, 'ftx_enable_marks', 1) && ftx#tree#marks#is_marked(a:node.path)
+    call add(parts, get(g:, 'ftx_icon_marked', '✓') . ' ')
   endif
   
   if get(g:, 'ftx_enable_icons', 1) && !a:node.is_dir
@@ -97,28 +99,26 @@ function! s:syntax() abort
       execute 'syntax match FTXIconCollapsed /' . s:esc(col) . '/'
     endif
   endif
+
+  if get(g:, 'ftx_enable_git', 1)
+    syntax match FTXGitStatusBracket /\[\zs..\ze\]/ contained
+    syntax match FTXGitStatus /\[..\]/ contains=FTXGitStatusBracket
+    
+    syntax match FTXGitStatusIndex /./ contained containedin=FTXGitStatusBracket nextgroup=FTXGitStatusWorktree
+    syntax match FTXGitStatusWorktree /./ contained
+    
+    syntax match FTXGitStatusUnmerged /DD\|AU\|UD\|UA\|DU\|AA\|UU/ contained containedin=FTXGitStatusBracket
+    syntax match FTXGitStatusUntracked /??/ contained containedin=FTXGitStatusBracket
+    syntax match FTXGitStatusIgnored /!!/ contained containedin=FTXGitStatusBracket
+  endif
+
   if get(g:, 'ftx_enable_marks', 1)
     let mark = get(g:, 'ftx_icon_marked', '✓')
     if !empty(mark)
       execute 'syntax match FTXMark /' . s:esc(mark) . '/'
     endif
   endif
-  if get(g:, 'ftx_enable_git', 1)
-    let g:ftx_git_icon_added = get(g:, 'ftx_git_icon_added', '+')
-    let g:ftx_git_icon_modified = get(g:, 'ftx_git_icon_modified', '*')
-    let g:ftx_git_icon_deleted = get(g:, 'ftx_git_icon_deleted', '-')
-    let g:ftx_git_icon_renamed = get(g:, 'ftx_git_icon_renamed', '→')
-    let g:ftx_git_icon_untracked = get(g:, 'ftx_git_icon_untracked', '?')
-    let g:ftx_git_icon_ignored = get(g:, 'ftx_git_icon_ignored', '◌')
-    let g:ftx_git_icon_unmerged = get(g:, 'ftx_git_icon_unmerged', '!')
-    execute 'syntax match FTXGitAdded /' . s:esc(g:ftx_git_icon_added) . '/'
-    execute 'syntax match FTXGitModified /' . s:esc(g:ftx_git_icon_modified) . '/'
-    execute 'syntax match FTXGitDeleted /' . s:esc(g:ftx_git_icon_deleted) . '/'
-    execute 'syntax match FTXGitRenamed /' . s:esc(g:ftx_git_icon_renamed) . '/'
-    execute 'syntax match FTXGitUntracked /' . s:esc(g:ftx_git_icon_untracked) . '/'
-    execute 'syntax match FTXGitIgnored /' . s:esc(g:ftx_git_icon_ignored) . '/'
-    execute 'syntax match FTXGitUnmerged /' . s:esc(g:ftx_git_icon_unmerged) . '/'
-  endif
+
   let icons = get(g:, 'ftx_icons', {})
   for [ext, icon] in items(icons)
     if !empty(icon)
@@ -127,6 +127,7 @@ function! s:syntax() abort
       execute 'syntax match FTXFile' . toupper(ext) . ' /' . pattern . '/'
     endif
   endfor
+
   let special = get(g:, 'ftx_special_icons', {})
   for [name, icon] in items(special)
     if !empty(icon)
@@ -159,18 +160,18 @@ function! s:highlight() abort
     highlight! FTXIconCollapsed ctermfg=51 guifg=#00d7ff gui=bold cterm=bold
   endif
 
-  if get(g:, 'ftx_enable_marks', 1)
-    highlight! FTXMark ctermfg=220 guifg=#ffd75f gui=bold cterm=bold
+  if get(g:, 'ftx_enable_git', 1)
+    highlight! link FTXGitStatus Comment
+    highlight! FTXGitStatusIndex     ctermfg=244 guifg=#808080
+    highlight! FTXGitStatusWorktree  ctermfg=202 guifg=#ff5f00
+    highlight! FTXGitStatusUnmerged  ctermfg=196 guifg=#ff0000 gui=bold cterm=bold
+    highlight! FTXGitStatusUntracked ctermfg=244 guifg=#808080
+    highlight! FTXGitStatusIgnored   ctermfg=238 guifg=#444444 gui=italic cterm=italic
+    highlight! link FTXGitStatusBracket Comment
   endif
 
-  if get(g:, 'ftx_enable_git', 1)
-    highlight! FTXGitAdded      ctermfg=113 guifg=#87d75f gui=bold cterm=bold
-    highlight! FTXGitModified   ctermfg=214 guifg=#ffaf5f gui=bold cterm=bold
-    highlight! FTXGitDeleted    ctermfg=203 guifg=#ff5f87 gui=bold cterm=bold
-    highlight! FTXGitRenamed    ctermfg=141 guifg=#af87ff gui=bold cterm=bold
-    highlight! FTXGitUntracked  ctermfg=245 guifg=#8a8a8a
-    highlight! FTXGitIgnored    ctermfg=238 guifg=#444444 gui=italic cterm=italic
-    highlight! FTXGitUnmerged   ctermfg=197 guifg=#ff005f gui=bold cterm=bold
+  if get(g:, 'ftx_enable_marks', 1)
+    highlight! FTXMark ctermfg=220 guifg=#ffd75f gui=bold cterm=bold
   endif
 
   let colors = get(g:, 'ftx_colors', {})

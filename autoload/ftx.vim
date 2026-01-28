@@ -4,6 +4,7 @@
 " ----------------------------------------------------------------------
 
 let s:renderer = {}
+let s:is_refreshing = 0
 
 function! ftx#open(...) abort
   let path = a:0 > 0 ? fnamemodify(a:1, ':p') : getcwd()
@@ -17,15 +18,16 @@ function! ftx#open(...) abort
 
   if ftx#is_open()
     call ftx#focus()
-    call ftx#refresh()
+    if ftx#tree#tree#get_root() !=# path
+      call ftx#refresh()
+    endif
     return
   endif
 
   call s:create_window()
-
-  call ftx#git#status#init(path)
-        \.then({_ -> ftx#refresh()})
-        \.catch({err -> ftx#refresh()})
+  call ftx#refresh()
+        \.then({_ -> ftx#git#status#init(path)})
+        \.catch({err -> 0})
 endfunction
 
 function! ftx#toggle() abort
@@ -46,10 +48,12 @@ function! ftx#close() abort
 endfunction
 
 function! ftx#refresh(...) abort
-  if !ftx#is_open()
-    return
+  if !ftx#is_open() || s:is_refreshing
+    return ftx#async#promise#resolve(0)
   endif
 
+  let s:is_refreshing = 1
+  
   let opts = extend({
         \ 'force': 0,
         \ 'path': v:null,
@@ -57,20 +61,30 @@ function! ftx#refresh(...) abort
 
   let root = ftx#tree#tree#get_root()
   let cursor_pos = ftx#tree#ui#save_cursor()
-
-  if !opts.force && !ftx#tree#cache#check_changed(root)
+  if !opts.force
     let cached = ftx#tree#cache#get_tree(root)
     if cached isnot v:null
-      call s:expand_and_display(cached, cursor_pos)
-      return
+      let s:is_refreshing = 0
+      return s:expand_and_display(cached, cursor_pos)
     endif
   endif
-
-  call ftx#tree#tree#build(root, 0)
+  return ftx#tree#tree#build(root, 0)
         \.then({nodes -> s:expand_marked_nodes(nodes)})
         \.then({nodes -> s:cache_tree(root, nodes)})
         \.then({nodes -> s:display_tree(nodes, cursor_pos)})
-        \.catch({err -> ftx#helpers#logger#error('Refresh failed', err)})
+        \.then({_ -> s:mark_done()})
+        \.catch({err -> s:handle_error(err)})
+endfunction
+
+function! s:mark_done() abort
+  let s:is_refreshing = 0
+  return 0
+endfunction
+
+function! s:handle_error(err) abort
+  let s:is_refreshing = 0
+  call ftx#helpers#logger#error('Refresh failed', a:err)
+  return 0
 endfunction
 
 function! s:display_tree(nodes, cursor_pos) abort
@@ -85,11 +99,10 @@ endfunction
 function! s:expand_and_display(nodes, cursor_pos) abort
   let flat = ftx#tree#tree#flatten(a:nodes)
 
-  call s:render_nodes(flat)
+  return s:render_nodes(flat)
         \.then({lines -> s:display_lines(lines)})
         \.then({_ -> s:reapply_syntax()})
         \.then({_ -> ftx#tree#ui#restore_cursor(a:cursor_pos)})
-        \.catch({err -> ftx#helpers#logger#error('Display failed', err)})
 endfunction
 
 function! s:cache_tree(root, nodes) abort
@@ -98,17 +111,36 @@ function! s:cache_tree(root, nodes) abort
 endfunction
 
 function! s:expand_marked_nodes(nodes) abort
-  let promises = []
+  let to_expand = []
   for node in a:nodes
     if node.is_dir && ftx#tree#tree#is_expanded(node.path)
-      call add(promises, ftx#tree#tree#expand_node(node))
+      call add(to_expand, node)
     endif
   endfor
-  if empty(promises)
+  
+  if empty(to_expand)
     return ftx#async#promise#resolve(a:nodes)
   endif
+  return s:expand_batch(to_expand, 0, a:nodes)
+endfunction
+
+function! s:expand_batch(nodes, idx, result) abort
+  let batch_size = 5
+  let promises = []
+  
+  for i in range(a:idx, min([a:idx + batch_size - 1, len(a:nodes) - 1]))
+    call add(promises, ftx#tree#tree#expand_node(a:nodes[i]))
+  endfor
+  
+  if empty(promises)
+    return ftx#async#promise#resolve(a:result)
+  endif
+  
   return ftx#async#promise#all(promises)
-        \.then({_ -> a:nodes})
+        \.then({_ -> a:idx + batch_size >= len(a:nodes)
+        \     ? a:result
+        \     : s:expand_batch(a:nodes, a:idx + batch_size, a:result)
+        \})
 endfunction
 
 function! s:render_nodes(nodes) abort
@@ -164,6 +196,7 @@ function! s:create_window() abort
   call ftx#mapping#init#setup()
   call s:setup_autocmds()
   call s:setup_syntax()
+  call s:setup_statusline()
   call ftx#internal#drawer#init()
 endfunction
 
@@ -206,7 +239,12 @@ function! s:setup_syntax() abort
   call s:renderer.highlight()
 endfunction
 
+function! s:setup_statusline() abort
+  setlocal statusline=%!ftx#git#statusline#render()
+endfunction
+
 function! ftx#cleanup() abort
+  let s:is_refreshing = 0
   call ftx#tree#tree#clear()
   call ftx#tree#marks#clear()
   call ftx#tree#ui#clear()

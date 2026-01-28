@@ -1,8 +1,6 @@
 " ----------------------------------------------------------------------
 " Copyright (c) 2026 m-mdy-m
 " MIT License
-"
-" Git status management with async operations and caching
 " ----------------------------------------------------------------------
 
 let s:state = {
@@ -18,7 +16,6 @@ function! ftx#git#status#init(path) abort
   endif
   
   if !executable('git')
-    call ftx#helpers#logger#warn('Git not found')
     return ftx#async#promise#resolve({})
   endif
   
@@ -56,14 +53,14 @@ function! s:setup_tracking(root) abort
     call timer_stop(s:state.update_timer)
   endif
   
-  let interval = get(g:, 'ftx_git_update_time', 1000)
+  let interval = get(g:, 'ftx_git_update_time', 2000)
   let s:state.update_timer = timer_start(interval, function('s:on_timer'), {'repeat': -1})
   
   return a:root
 endfunction
 
 function! s:on_timer(timer) abort
-  if empty(s:state.root)
+  if empty(s:state.root) || !ftx#is_open()
     return
   endif
   call s:update_status(s:state.root)
@@ -74,12 +71,18 @@ function! s:update_status(root) abort
     call s:stop_job()
   endif
   
-  let cmd = ['git', '-C', a:root, 'status', '--porcelain=v1', '-b', '--ignored']
+  let cmd = ['git', '-C', a:root, 'status', '--porcelain=v1', '-b']
+  
+  if !get(g:, 'ftx_show_ignored', 0)
+    call add(cmd, '--ignored=no')
+  else
+    call add(cmd, '--ignored=matching')
+  endif
   
   return ftx#async#job#run(cmd, {'cwd': a:root})
         \.then({lines -> s:parse_status(a:root, lines)})
         \.then({cache -> s:finalize(cache)})
-        \.catch({err -> s:handle_error(err)})
+        \.catch({err -> {}})
 endfunction
 
 function! s:parse_status(root, lines) abort
@@ -95,15 +98,11 @@ function! s:parse_status(root, lines) abort
       continue
     endif
     
-    let status = line[0:1]
+    let xy = line[0:1]
     let file = s:extract_file(line[3:])
     let path = a:root . '/' . file
-    
-    let icon = s:get_icon(status)
-    if !empty(icon)
-      let cache[path] = icon
-      call s:mark_parents(cache, a:root, path, icon)
-    endif
+    let cache[path] = xy
+    call s:mark_parents(cache, a:root, path, xy)
   endfor
   
   return cache
@@ -113,39 +112,15 @@ function! s:extract_file(str) abort
   return substitute(a:str, ' -> .*', '', '')
 endfunction
 
-function! s:get_icon(status) abort
-  if a:status[0:1] ==# '!!'
-    return get(g:, 'ftx_show_ignored', 0) 
-          \ ? get(g:, 'ftx_git_icon_ignored', '◌')
-          \ : ''
-  endif
-  
-  let x = a:status[0]
-  let y = a:status[1]
-  
-  if x ==# 'A' || y ==# 'A'
-    return get(g:, 'ftx_git_icon_added', '+')
-  elseif x ==# 'M' || y ==# 'M'
-    return get(g:, 'ftx_git_icon_modified', '*')
-  elseif x ==# 'D' || y ==# 'D'
-    return get(g:, 'ftx_git_icon_deleted', '-')
-  elseif x ==# 'R' || y ==# 'R'
-    return get(g:, 'ftx_git_icon_renamed', '→')
-  elseif a:status ==# '??'
-    return get(g:, 'ftx_git_icon_untracked', '?')
-  elseif x ==# 'U' || y ==# 'U'
-    return get(g:, 'ftx_git_icon_unmerged', '!')
-  endif
-  
-  return ''
-endfunction
-
-function! s:mark_parents(cache, root, path, icon) abort
+function! s:mark_parents(cache, root, path, xy) abort
   let dir = ftx#helpers#path#dirname(a:path)
-  
+  let x = a:xy[0]
+  let y = a:xy[1]
   while dir !=# a:root && dir !=# '/'
     if !has_key(a:cache, dir)
-      let a:cache[dir] = a:icon
+      let dx = (x =~# '[MARCD]') ? get(g:, 'ftx_git_status_dir_index', '-') : ' '
+      let dy = (y =~# '[MDT]') ? get(g:, 'ftx_git_status_dir_worktree', '-') : ' '
+      let a:cache[dir] = dx . dy
     endif
     let dir = ftx#helpers#path#dirname(dir)
   endwhile
@@ -161,11 +136,6 @@ function! s:finalize(cache) abort
   return a:cache
 endfunction
 
-function! s:handle_error(err) abort
-  call ftx#helpers#logger#error('Git status failed', a:err)
-  return {}
-endfunction
-
 function! s:stop_job() abort
   if s:state.job isnot v:null
     try
@@ -176,8 +146,62 @@ function! s:stop_job() abort
   endif
 endfunction
 
-function! ftx#git#status#get(path) abort
+function! ftx#git#status#get_raw(path) abort
   return get(s:state.cache, a:path, '')
+endfunction
+
+function! ftx#git#status#get(path) abort
+  let xy = ftx#git#status#get_raw(a:path)
+  if empty(xy) || len(xy) != 2
+    return ''
+  endif
+  
+  let custom = get(g:, 'ftx_git_status_icons', {})
+  if has_key(custom, xy)
+    return custom[xy]
+  endif
+  
+  return s:get_default_icon(xy)
+endfunction
+
+function! s:get_default_icon(xy) abort
+  if a:xy =~# '^\%(DD\|AU\|UD\|UA\|DU\|AA\|UU\)$'
+    return get(g:, 'ftx_git_icon_unmerged', '!')
+  endif
+  
+  if a:xy ==# '??'
+    return get(g:, 'ftx_git_icon_untracked', '?')
+  endif
+  if a:xy ==# '!!'
+    return get(g:, 'ftx_git_icon_ignored', '◌')
+  endif
+  
+  let x = a:xy[0]
+  let y = a:xy[1]
+  
+  " Worktree changes have priority (what you see in files)
+  if y ==# 'M'
+    return get(g:, 'ftx_git_icon_modified', '*')
+  elseif y ==# 'D'
+    return get(g:, 'ftx_git_icon_deleted', '-')
+  elseif y ==# 'T'
+    return get(g:, 'ftx_git_icon_modified', '*')
+  endif
+  
+  " Index changes (staged)
+  if x ==# 'M'
+    return get(g:, 'ftx_git_icon_modified', '*')
+  elseif x ==# 'A'
+    return get(g:, 'ftx_git_icon_added', '+')
+  elseif x ==# 'D'
+    return get(g:, 'ftx_git_icon_deleted', '-')
+  elseif x ==# 'R'
+    return get(g:, 'ftx_git_icon_renamed', '→')
+  elseif x ==# 'C'
+    return get(g:, 'ftx_git_icon_renamed', '→')
+  endif
+  
+  return ''
 endfunction
 
 function! ftx#git#status#get_all() abort
@@ -194,8 +218,6 @@ function! ftx#git#status#refresh() abort
   endif
   
   return s:update_status(s:state.root)
-        \.then({_ -> ftx#refresh()})
-        \.catch({err -> ftx#helpers#logger#error('Refresh failed', err)})
 endfunction
 
 function! ftx#git#status#cleanup() abort

@@ -15,13 +15,21 @@ function! ftx#internal#drawer#auto_resize#init() abort
       autocmd! * <buffer>
       autocmd BufEnter,WinEnter <buffer> call s:load_width_right()
       autocmd WinLeave <buffer> call s:save_width_right()
+      autocmd TabClosed * call s:on_tab_closed()
     augroup END
   else
     augroup ftx_drawer_auto_resize
       autocmd! * <buffer>
       autocmd BufEnter,WinEnter <buffer> call s:load_width()
       autocmd WinLeave <buffer> call s:save_width()
+      autocmd TabClosed * call s:on_tab_closed()
     augroup END
+  endif
+endfunction
+
+function! s:on_tab_closed() abort
+  if ftx#is_open()
+    call timer_start(10, {-> ftx#internal#drawer#resize()})
   endif
 endfunction
 
