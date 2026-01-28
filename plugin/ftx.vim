@@ -105,9 +105,8 @@ command! FTXYankName call ftx#mapping#yank#name()
 command! FTXCd call ftx#mapping#node#cd()
 command! FTXHelp call ftx#mapping#tree#show_help()
 nnoremap <silent> <F2> :<C-u>FTXToggle<CR>
-nnoremap <silent> <F3> :<C-u>FTXRefresh<CR>
+nnoremap <silent> <F3> :<C-u>FTXFocus<CR>
 nnoremap <silent> <leader>n :<C-u>FTXToggle<CR>
-nnoremap <silent> <leader>nf :<C-u>FTXFocus<CR>
 nnoremap <silent> <leader>nr :<C-u>FTXRefresh<CR>
 nnoremap <silent> <leader>nh :<C-u>FTXHelp<CR>
 

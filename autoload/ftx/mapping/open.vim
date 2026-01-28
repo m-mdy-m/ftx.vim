@@ -20,66 +20,49 @@ function! ftx#mapping#open#execute(cmd) abort
     return
   endif
   
-  let origin_tab = tabpagenr()
-  let origin_win = winnr()
-  
-  call s:open_file(node.path, a:cmd, origin_tab, origin_win)
+  call s:open_file(node.path, a:cmd)
   
   if get(g:, 'ftx_close_on_open', 0)
     call ftx#close()
   endif
 endfunction
 
-function! s:open_file(path, cmd, origin_tab, origin_win) abort
-  let target_win = s:find_target_window_in_tab(a:origin_tab)
+function! s:open_file(path, cmd) abort
+  if ftx#internal#window#goto_previous()
+    execute a:cmd . ' ' . fnameescape(a:path)
+    return
+  endif
+  let target_winid = ftx#internal#window#find_suitable()
   
-  if target_win > 0
-    execute 'tabnext' a:origin_tab
-    execute target_win . 'wincmd w'
+  if target_winid != -1
+    call win_gotoid(target_winid)
+    execute a:cmd . ' ' . fnameescape(a:path)
+    return
+  endif
+  if ftx#internal#drawer#is_drawer()
+    let position = get(g:, 'ftx_position', 'left')
+    if position ==# 'left'
+      wincmd l
+    else
+      wincmd h
+    endif
+    
+    if &filetype ==# 'ftx'
+      if position ==# 'left'
+        botright vnew
+      else
+        topleft vnew
+      endif
+    endif
   else
-    execute 'tabnext' a:origin_tab
     wincmd p
     
-    " If still in FTX, create new window
     if &filetype ==# 'ftx'
-      if ftx#internal#drawer#is_drawer()
-        wincmd l
-        if &filetype ==# 'ftx'
-          botright vnew
-        endif
-      else
-        wincmd p
-        if &filetype ==# 'ftx'
-          botright new
-        endif
-      endif
+      botright new
     endif
   endif
   
   execute a:cmd . ' ' . fnameescape(a:path)
-endfunction
-
-function! s:find_target_window_in_tab(tabnr) abort
-  let ftx_bufnr = ftx#internal#buffer#get()
-  let current_tab = tabpagenr()
-  execute 'tabnext' a:tabnr
-  
-  let target_win = 0
-  let winnr_count = winnr('$')
-  
-  for winnr in range(1, winnr_count)
-    let bufnr = winbufnr(winnr)
-    if bufnr == ftx_bufnr
-      continue
-    endif
-    if getbufvar(bufnr, '&buftype') ==# ''
-      let target_win = winnr
-      break
-    endif
-  endfor
-  execute 'tabnext' current_tab
-  
-  return target_win
 endfunction
 
 function! ftx#mapping#open#in_split(vertical) abort

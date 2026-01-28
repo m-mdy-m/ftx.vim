@@ -33,6 +33,7 @@ endfunction
 function! ftx#toggle() abort
   if ftx#is_open()
     call ftx#close()
+    call ftx#internal#window#goto_previous()
   else
     call ftx#open()
   endif
@@ -68,6 +69,7 @@ function! ftx#refresh(...) abort
       return s:expand_and_display(cached, cursor_pos)
     endif
   endif
+
   return ftx#tree#tree#build(root, 0)
         \.then({nodes -> s:expand_marked_nodes(nodes)})
         \.then({nodes -> s:cache_tree(root, nodes)})

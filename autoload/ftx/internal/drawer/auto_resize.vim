@@ -1,8 +1,6 @@
 " ----------------------------------------------------------------------
 " Copyright (c) 2026 m-mdy-m
 " MIT License
-"
-" Auto-resize drawer width preservation
 " ----------------------------------------------------------------------
 
 function! ftx#internal#drawer#auto_resize#init() abort
@@ -15,22 +13,50 @@ function! ftx#internal#drawer#auto_resize#init() abort
       autocmd! * <buffer>
       autocmd BufEnter,WinEnter <buffer> call s:load_width_right()
       autocmd WinLeave <buffer> call s:save_width_right()
-      autocmd TabClosed * call s:on_tab_closed()
     augroup END
   else
     augroup ftx_drawer_auto_resize
       autocmd! * <buffer>
       autocmd BufEnter,WinEnter <buffer> call s:load_width()
       autocmd WinLeave <buffer> call s:save_width()
-      autocmd TabClosed * call s:on_tab_closed()
     augroup END
   endif
+  call s:setup_global_resize()
+endfunction
+
+function! s:setup_global_resize() abort
+  augroup ftx_drawer_resize_on_tabclose
+    autocmd!
+    autocmd TabClosed * call s:on_tab_closed()
+    autocmd WinClosed * call s:on_win_closed()
+  augroup END
 endfunction
 
 function! s:on_tab_closed() abort
   if ftx#is_open()
-    call timer_start(10, {-> ftx#internal#drawer#resize()})
+    call timer_start(50, {-> s:resize_if_visible()})
   endif
+endfunction
+
+function! s:on_win_closed() abort
+  if ftx#is_open()
+    call timer_start(50, {-> s:resize_if_visible()})
+  endif
+endfunction
+
+function! s:resize_if_visible() abort
+  if !ftx#is_open()
+    return
+  endif
+  
+  let winid = ftx#internal#buffer#winid()
+  if winid == -1
+    return
+  endif
+  let current_win = win_getid()
+  call win_gotoid(winid)
+  call ftx#internal#drawer#resize()
+  call win_gotoid(current_win)
 endfunction
 
 function! s:count_others() abort
