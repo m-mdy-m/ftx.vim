@@ -58,15 +58,15 @@ endfunction
 function! ftx#api#open_with(name, path, ...) abort
   call s:ensure_builtin_openers()
 
-  let callback = get(s:openers, a:name, v:null)
-  if callback is v:null
+  let s:callback = get(s:openers, a:name, v:null)
+  if s:callback is v:null
     call ftx#helpers#logger#error('Unknown opener', a:name)
     return 0
   endif
 
   let ctx = a:0 ? a:1 : {}
   try
-    call call(callback, [a:path, ctx])
+    call call(s:callback, [a:path, ctx])
     return 1
   catch
     call ftx#helpers#logger#error('Opener failed', {
