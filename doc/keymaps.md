@@ -20,10 +20,22 @@ All keyboard shortcuts. Hit `?` inside FTX to see actual mappings.
 | Mapping | Action | Description |
 |---------|--------|-------------|
 | `o`, `<Return>` | `open` | Open file or toggle directory |
+| `gw` | `open:select` | Open with visual window selector |
 | `t` | `open:tab` | Open in new tab |
 | `s` | `open:split` | Open in horizontal split |
 | `v` | `open:vsplit` | Open in vertical split |
 | `<2-LeftMouse>` | `open` | Open with double-click |
+
+Selector controls after pressing `gw`:
+
+| Key | Action |
+|-----|--------|
+| `a..z`, `0..9` (based on labels) | Open in selected window |
+| `o`, `<Return>` | Open in previous window (or new window fallback) |
+| `t` | Open in new tab |
+| `s` | Open in horizontal split |
+| `v` | Open in vertical split |
+| `q`, `<Esc>` | Cancel |
 
 ### Tree Operations
 
@@ -149,6 +161,7 @@ nnoremap <leader>fm :FTXMarkToggle<CR>
 function! s:ftx_mappings() abort
   nmap <buffer> <C-t> <Plug>(ftx-open:tab)
   nmap <buffer> <C-s> <Plug>(ftx-open:split)
+  nmap <buffer> <leader>w <Plug>(ftx-open:select)
 endfunction
 
 augroup ftx_custom

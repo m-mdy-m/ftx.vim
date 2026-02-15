@@ -12,6 +12,8 @@ let g:ftx_sort_dirs_first = 1           " Dirs before files (default: 1)
 let g:ftx_auto_close = 0                " Close when last window (default: 0)
 let g:ftx_auto_sync = 1                 " Sync to current file (default: 0)
 let g:ftx_close_on_open = 0             " Close after opening file (default: 0)
+let g:ftx_mapping_open_select = 'gw'    " Visual window selector mapping (default: 'gw', empty disables)
+let g:ftx_select_labels = 'asdfjklqweruiopzxcvbnm1234567890' " selector labels order
 ```
 
 ## Git Settings

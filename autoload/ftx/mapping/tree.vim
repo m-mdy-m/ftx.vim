@@ -93,6 +93,7 @@ function! ftx#mapping#tree#show_help() abort
         \ '',
         \ 'File Operations:',
         \ '  o, <CR>  - Open file / Toggle directory',
+        \ '  gw       - Open with visual window selector',
         \ '  t        - Open in tab',
         \ '  s        - Open in split',
         \ '  v        - Open in vsplit',

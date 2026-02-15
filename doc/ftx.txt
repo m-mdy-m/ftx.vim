@@ -192,6 +192,7 @@ These work inside FTX buffer:
 
 File Operations~
     o, <Return>     Open file or toggle directory
+    gw              Open with visual window selector
     t               Open in tab
     s               Open in horizontal split
     v               Open in vertical split
@@ -238,6 +239,7 @@ Add your own in |vimrc|: >
 Inside FTX buffer: >
     function! s:ftx_mappings() abort
       nmap <buffer> <C-t> t
+      nmap <buffer> <leader>w <Plug>(ftx-open:select)
     endfunction
     
     autocmd FileType ftx call s:ftx_mappings()
@@ -282,6 +284,18 @@ Window Settings~
     Close FTX after opening a file.
     Default: 0 >
         let g:ftx_close_on_open = 0
+<
+*g:ftx_mapping_open_select*
+    Mapping used for visual window selector open.
+    Set empty string to disable default mapping.
+    Default: 'gw' >
+        let g:ftx_mapping_open_select = 'gw'
+<
+*g:ftx_select_labels*
+    Label sequence used by visual selector.
+    First matching character selects target window.
+    Default: 'asdfjklqweruiopzxcvbnm1234567890' >
+        let g:ftx_select_labels = 'asdfjklqweruiopzxcvbnm1234567890'
 <
 Feature Settings~
 
