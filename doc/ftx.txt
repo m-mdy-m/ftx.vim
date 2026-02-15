@@ -16,7 +16,8 @@ CONTENTS                                                        *ftx-contents*
     7. Git Integration ........................ |ftx-git|
     8. Marking ................................ |ftx-marking|
     9. Customization .......................... |ftx-customization|
-   10. FAQ .................................... |ftx-faq|
+   10. Developer API .......................... |ftx-developer|
+   11. FAQ .................................... |ftx-faq|
 
 ==============================================================================
 1. INTRODUCTION                                             *ftx-introduction*
@@ -262,8 +263,8 @@ Window Settings~
 <
 *g:ftx_show_hidden*
     Show hidden files (dotfiles) by default.
-    Default: 0 >
-        let g:ftx_show_hidden = 0
+    Default: 1 >
+        let g:ftx_show_hidden = 1
 <
 *g:ftx_sort_dirs_first*
     Sort directories before files.
@@ -278,18 +279,12 @@ Window Settings~
 *g:ftx_auto_sync*
     Auto-sync tree to current buffer.
     Default: 0 >
-        let g:ftx_auto_sync = 1
+        let g:ftx_auto_sync = 0
 <
 *g:ftx_close_on_open*
     Close FTX after opening a file.
     Default: 0 >
         let g:ftx_close_on_open = 0
-<
-*g:ftx_mapping_open_select*
-    Mapping used for visual window selector open.
-    Set empty string to disable default mapping.
-    Default: 'gw' >
-        let g:ftx_mapping_open_select = 'gw'
 <
 *g:ftx_select_labels*
     Label sequence used by visual selector.
@@ -520,7 +515,37 @@ Performance Mode: >
 <
 
 ==============================================================================
-10. FAQ                                                              *ftx-faq*
+10. DEVELOPER API                                           *ftx-developer*
+
+FTX exposes a small extension API focused on real integrations.
+
+Events~
+
+Register callbacks with: >
+    call ftx#api#on('tree:opened', function('MyOpenHandler'))
+<
+
+Supported events:
+    tree:opened      payload: { root }
+    tree:rendered    payload: { root, node_count }
+    tree:closed      payload: { root }
+    file:opened      payload: { path, node, opener }
+
+Openers~
+
+Register custom openers (for fzf/debugger/other flows): >
+    call ftx#api#register_opener('debug', function('MyDebuggerOpen'))
+<
+
+Open current node with opener: >
+    call ftx#api#open_node_with('debug', ftx#tree#ui#get_cursor_node())
+<
+
+Built-in openers:
+    edit, split, vsplit, tabedit
+
+==============================================================================
+11. FAQ                                                              *ftx-faq*
 
 Q: How do I make FTX open on left/right?
 A: Set |g:ftx_position| to 'left' or 'right'.

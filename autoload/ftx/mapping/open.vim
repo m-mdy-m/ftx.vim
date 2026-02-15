@@ -3,6 +3,7 @@
 " MIT License
 " ----------------------------------------------------------------------
 
+
 function! ftx#mapping#open#execute(cmd) abort
   let node = ftx#tree#ui#get_cursor_node()
   
@@ -15,19 +16,14 @@ function! ftx#mapping#open#execute(cmd) abort
     return
   endif
   
-  if !filereadable(node.path)
-    call ftx#helpers#logger#error('File not readable', node.path)
-    return
-  endif
-  
-  call s:open_file(node.path, a:cmd)
+  call ftx#api#open_node_with(a:cmd, node)
   
   if get(g:, 'ftx_close_on_open', 0)
     call ftx#close()
   endif
 endfunction
 
-function! s:open_file(path, cmd) abort
+function! ftx#mapping#open#open_path(path, cmd) abort
   if ftx#internal#window#goto_previous()
     execute a:cmd . ' ' . fnameescape(a:path)
     return
@@ -72,8 +68,7 @@ function! ftx#mapping#open#in_split(vertical) abort
     return
   endif
   
-  let cmd = a:vertical ? 'vsplit' : 'split'
-  call ftx#mapping#open#execute(cmd)
+  call ftx#mapping#open#execute(a:vertical ? 'vsplit' : 'split')
 endfunction
 
 function! ftx#mapping#open#in_tab() abort

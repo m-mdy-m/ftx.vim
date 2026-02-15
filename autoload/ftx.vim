@@ -25,6 +25,7 @@ function! ftx#open(...) abort
   endif
 
   call s:create_window()
+  call ftx#api#emit('tree:opened', {'root': path})
   call ftx#refresh()
         \.then({_ -> ftx#git#status#init(path)})
         \.catch({err -> 0})
@@ -46,6 +47,7 @@ function! ftx#close() abort
 
   call ftx#internal#window#close()
   call ftx#tree#ui#clear()
+  call ftx#api#emit('tree:closed', {'root': ftx#tree#tree#get_root()})
 endfunction
 
 function! ftx#refresh(...) abort
@@ -96,6 +98,7 @@ function! s:display_tree(nodes, cursor_pos) abort
         \.then({lines -> s:display_lines(lines)})
         \.then({_ -> s:reapply_syntax()})
         \.then({_ -> ftx#tree#ui#restore_cursor(a:cursor_pos)})
+        \.then({_ -> s:emit_rendered(len(flat))})
 endfunction
 
 function! s:expand_and_display(nodes, cursor_pos) abort
@@ -110,6 +113,14 @@ endfunction
 function! s:cache_tree(root, nodes) abort
   call ftx#tree#cache#set_tree(a:root, a:nodes)
   return a:nodes
+endfunction
+
+function! s:emit_rendered(node_count) abort
+  call ftx#api#emit('tree:rendered', {
+        \ 'root': ftx#tree#tree#get_root(),
+        \ 'node_count': a:node_count,
+        \ })
+  return 0
 endfunction
 
 function! s:expand_marked_nodes(nodes) abort
@@ -227,7 +238,7 @@ function! s:setup_autocmds() abort
 endfunction
 
 function! s:on_buf_enter() abort
-  if get(g:, 'ftx_auto_sync', 1)
+  if get(g:, 'ftx_auto_sync', 0)
     call ftx#mapping#tree#sync_to_current()
   endif
 endfunction
