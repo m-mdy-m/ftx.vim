@@ -101,7 +101,7 @@ function! s:parse_status(root, lines) abort
     let xy = line[0:1]
     let file = s:extract_file(line[3:])
     let path = a:root . '/' . file
-    let cache[path] = xy
+    let cache[path] = s:merge_status(get(cache, path, ''), xy)
     call s:mark_parents(cache, a:root, path, xy)
   endfor
   
@@ -114,16 +114,71 @@ endfunction
 
 function! s:mark_parents(cache, root, path, xy) abort
   let dir = ftx#helpers#path#dirname(a:path)
-  let x = a:xy[0]
-  let y = a:xy[1]
+
   while dir !=# a:root && dir !=# '/'
-    if !has_key(a:cache, dir)
-      let dx = (x =~# '[MARCD]') ? get(g:, 'ftx_git_status_dir_index', '-') : ' '
-      let dy = (y =~# '[MDT]') ? get(g:, 'ftx_git_status_dir_worktree', '-') : ' '
-      let a:cache[dir] = dx . dy
-    endif
+    let a:cache[dir] = s:merge_status(get(a:cache, dir, ''), a:xy)
     let dir = ftx#helpers#path#dirname(dir)
   endwhile
+endfunction
+
+function! s:merge_status(current, incoming) abort
+  if empty(a:current)
+    return a:incoming
+  endif
+  if empty(a:incoming)
+    return a:current
+  endif
+
+  if a:current =~# 'U' || a:incoming =~# 'U'
+    return 'UU'
+  endif
+
+  if a:current ==# '!!' && a:incoming ==# '!!'
+    return '!!'
+  endif
+  if (a:current ==# '??' || a:incoming ==# '??')
+    if a:current =~# '[MADRCTU]' || a:incoming =~# '[MADRCTU]'
+      " Mixed tracked + untracked changes.
+      return s:merge_xy(a:current, a:incoming)
+    endif
+    return '??'
+  endif
+
+  return s:merge_xy(a:current, a:incoming)
+endfunction
+
+function! s:merge_xy(current, incoming) abort
+  let x = s:pick_index(a:current[0], a:incoming[0])
+  let y = s:pick_worktree(a:current[1], a:incoming[1])
+  return x . y
+endfunction
+
+function! s:pick_index(left, right) abort
+  let weights = {
+        \ ' ': 0,
+        \ '!': 1,
+        \ '?': 2,
+        \ 'A': 3,
+        \ 'C': 4,
+        \ 'R': 5,
+        \ 'M': 6,
+        \ 'D': 7,
+        \ 'U': 8,
+        \ }
+  return get(weights, a:left, 0) >= get(weights, a:right, 0) ? a:left : a:right
+endfunction
+
+function! s:pick_worktree(left, right) abort
+  let weights = {
+        \ ' ': 0,
+        \ '!': 1,
+        \ '?': 2,
+        \ 'T': 3,
+        \ 'M': 4,
+        \ 'D': 5,
+        \ 'U': 6,
+        \ }
+  return get(weights, a:left, 0) >= get(weights, a:right, 0) ? a:left : a:right
 endfunction
 
 function! s:finalize(cache) abort
@@ -154,6 +209,10 @@ function! ftx#git#status#get(path) abort
   let xy = ftx#git#status#get_raw(a:path)
   if empty(xy) || len(xy) != 2
     return ''
+  endif
+
+  if get(g:, 'ftx_git_status_style', 'icon') ==# 'xy'
+    return xy
   endif
   
   let custom = get(g:, 'ftx_git_status_icons', {})
