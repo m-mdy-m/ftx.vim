@@ -1,4 +1,4 @@
-# 🌲 ftx.vim — Fast Tree eXplorer for Vim/Neovim
+# 🐉 ftx.vim — Fast Tree eXplorer for Vim/Neovim
 
 ![Support Vim 8.0+](https://img.shields.io/badge/support-Vim%208.0%2B-yellowgreen.svg)
 ![Support Neovim 0.4+](https://img.shields.io/badge/support-Neovim%200.4%2B-yellowgreen.svg)
@@ -18,7 +18,6 @@ FTX is a **pure Vim script**, **asynchronous** file tree explorer focused on spe
 ## Features
 - ⚡ Async tree build/update (keeps editor responsive)
 - 🌿 Git-aware tree (files + directories)
-- 🧩 Plugin-ready API 
 - 🪟 Split-window and drawer workflows
 
 ## Installation
