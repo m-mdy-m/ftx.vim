@@ -407,3 +407,42 @@ This is a complete rewrite of FTX with new architecture and APIs.
 * FTX command argument parsing issue
 
 [1.0.1]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v1.0.1
+
+## [1.1.0] - 2026-02-16
+
+### Added
+
+* Window selector workflow for both `gw` (open) and `gW` (jump without open) to target existing windows/tabs.
+* New `gW` mapping (like `gw`) for direct jump-only navigation.
+* Public developer APIs added in `autoload/ftx/api.vim`.
+* Directory-aware git statusline module.
+
+Selector controls after pressing `gw` or `gW`:
+
+| Key | Action |
+|-----|--------|
+| `a..z`, `0..9` (based on labels) | Target labeled window (`gw`: open, `gW`: jump) |
+| `o`, `<Return>` | Previous window/new fallback (`gw`: open, `gW`: jump) |
+| `t` | New tab (`gw`: open, `gW`: jump) |
+| `s` | Horizontal split (`gw`: open, `gW`: jump) |
+| `v` | Vertical split (`gw`: open, `gW`: jump) |
+| `q`, `<Esc>` | Cancel |
+
+### Changed
+
+* Ignored files are now shown by default.
+* Keymap flow updated by moving focus behavior to `:FTXFocus` and removing legacy `<leader>nf`.
+* Window management and open behavior refactored for more predictable tab/split selection.
+
+### Fixed
+
+* Fixed `E704` in developer API argument handling.
+* Improved git status propagation from files to parent directories.
+
+### Documentation
+
+* Added and documented developer APIs in `doc/developer.md`.
+* Documented API source location in `autoload/ftx/api.vim`.
+* Updated README/docs for selector keymaps and behavior changes.
+
+[1.1.0]: https://github.com/m-mdy-m/ftx.vim/releases/tag/v1.1.0
