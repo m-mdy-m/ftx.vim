@@ -19,6 +19,7 @@ function! s:setup_file_operations() abort
   nnoremap <buffer> <silent> o :<C-u>call ftx#mapping#open#execute('edit')<CR>
   nnoremap <buffer> <silent> <CR> :<C-u>call ftx#mapping#open#execute('edit')<CR>
   nnoremap <buffer> <silent> gw :<C-u>call ftx#mapping#select#open()<CR>
+  nnoremap <buffer> <silent> gW :<C-u>call ftx#mapping#select#jump()<CR>
   nnoremap <buffer> <silent> t :<C-u>call ftx#mapping#open#in_tab()<CR>
   nnoremap <buffer> <silent> s :<C-u>call ftx#mapping#open#in_split(0)<CR>
   nnoremap <buffer> <silent> v :<C-u>call ftx#mapping#open#in_split(1)<CR>

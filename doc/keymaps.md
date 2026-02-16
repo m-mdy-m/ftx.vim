@@ -21,20 +21,21 @@ All keyboard shortcuts. Hit `?` inside FTX to see actual mappings.
 |---------|--------|-------------|
 | `o`, `<Return>` | `open` | Open file or toggle directory |
 | `gw` | `open:select` | Open with visual window selector |
+| `gW` | `jump:select` | Jump with visual selector (no open) |
 | `t` | `open:tab` | Open in new tab |
 | `s` | `open:split` | Open in horizontal split |
 | `v` | `open:vsplit` | Open in vertical split |
 | `<2-LeftMouse>` | `open` | Open with double-click |
 
-Selector controls after pressing `gw`:
+Selector controls after pressing `gw` or `gW`:
 
 | Key | Action |
 |-----|--------|
-| `a..z`, `0..9` (based on labels) | Open in selected window |
-| `o`, `<Return>` | Open in previous window (or new window fallback) |
-| `t` | Open in new tab |
-| `s` | Open in horizontal split |
-| `v` | Open in vertical split |
+| `a..z`, `0..9` (based on labels) | Target labeled window (`gw`: open, `gW`: jump) |
+| `o`, `<Return>` | Previous window/new fallback (`gw`: open, `gW`: jump) |
+| `t` | New tab (`gw`: open, `gW`: jump) |
+| `s` | Horizontal split (`gw`: open, `gW`: jump) |
+| `v` | Vertical split (`gw`: open, `gW`: jump) |
 | `q`, `<Esc>` | Cancel |
 
 ### Tree Operations

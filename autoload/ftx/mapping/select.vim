@@ -37,6 +37,15 @@ function! ftx#mapping#select#open() abort
     call ftx#close()
   endif
 endfunction
+function! ftx#mapping#select#jump() abort
+  let selected = s:select_window_visual()
+
+  if selected.type ==# 'cancel'
+    return
+  endif
+
+  call s:jump_to_target(selected)
+endfunction
 
 function! s:select_window_visual() abort
   let saved_view = winsaveview()
@@ -308,6 +317,22 @@ function! s:open_in_target(path, target) abort
   endif
 endfunction
 
+function! s:jump_to_target(target) abort
+  if a:target.type ==# 'cancel'
+    return
+  elseif a:target.type ==# 'window'
+    call win_gotoid(a:target.winid)
+  elseif a:target.type ==# 'tab'
+    tabnew
+  elseif a:target.type ==# 'split'
+    call s:jump_in_split(0)
+  elseif a:target.type ==# 'vsplit'
+    call s:jump_in_split(1)
+  elseif a:target.type ==# 'new'
+    call s:jump_to_new_window()
+  endif
+endfunction
+
 function! s:open_in_window(path, winid) abort
   call win_gotoid(a:winid)
 
@@ -364,6 +389,37 @@ function! s:open_in_new_window(path) abort
   endif
 
   execute 'edit ' . fnameescape(a:path)
+endfunction
+
+function! s:jump_in_split(vertical) abort
+  if ftx#internal#window#goto_previous()
+    execute a:vertical ? 'vsplit' : 'split'
+    return
+  endif
+
+  let target_winid = ftx#internal#window#find_suitable()
+  if target_winid != -1
+    call win_gotoid(target_winid)
+  endif
+
+  execute a:vertical ? 'vsplit' : 'split'
+endfunction
+
+function! s:jump_to_new_window() abort
+  if ftx#internal#drawer#is_drawer()
+    let position = get(g:, 'ftx_position', 'left')
+    execute position ==# 'left' ? 'wincmd l' : 'wincmd h'
+
+    if &filetype ==# 'ftx'
+      execute position ==# 'left' ? 'botright vnew' : 'topleft vnew'
+    endif
+    return
+  endif
+
+  wincmd p
+  if &filetype ==# 'ftx'
+    botright new
+  endif
 endfunction
 
 function! s:setup_highlight() abort

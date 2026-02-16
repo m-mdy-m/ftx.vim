@@ -194,6 +194,7 @@ These work inside FTX buffer:
 File Operations~
     o, <Return>     Open file or toggle directory
     gw              Open with visual window selector
+    gW              Jump with visual selector (no open)
     t               Open in tab
     s               Open in horizontal split
     v               Open in vertical split
